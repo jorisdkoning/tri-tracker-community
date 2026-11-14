@@ -6,7 +6,7 @@ export async function loadGettingStarted(userId: string) {
   const [intervals, strava, metric, activity, gym, checkIn, race, goal, meal] = await Promise.all([
     prisma.intervalsAccount.findFirst(one),
     prisma.stravaAccount.findFirst(one),
-    prisma.dailyMetric.findFirst(one),
+    prisma.dailyMetric.findFirst({ where: { userId, source: { not: "manual" } }, select: { id: true } }),
     prisma.activity.findFirst(one),
     prisma.gymSession.findFirst(one),
     prisma.checkIn.findFirst(one),
