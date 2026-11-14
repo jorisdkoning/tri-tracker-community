@@ -12,6 +12,7 @@ import { RecentActivities } from "./_dashboard/RecentActivities";
 import { Recovery } from "./_dashboard/Recovery";
 import { GoalsCard } from "./_dashboard/GoalsCard";
 import { FuelAndSpend } from "./_dashboard/FuelAndSpend";
+import { ReadinessCard } from "./_dashboard/ReadinessCard";
 
 export default async function DashboardPage() {
   const user = await requireUser();
@@ -31,6 +32,8 @@ export default async function DashboardPage() {
       {steps && <GettingStarted steps={steps} />}
 
       <CheckInCard {...data.checkIn} />
+
+      <ReadinessCard readiness={data.readiness} />
 
       <div className="grid gap-4 md:grid-cols-3">
         <FitnessCard fitness={data.fitness} />
