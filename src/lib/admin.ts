@@ -23,6 +23,7 @@ export async function loadAdminOverview() {
         dailyMetrics: { orderBy: { date: "desc" }, take: 1, select: { date: true } },
         checkIns: { orderBy: { date: "desc" }, take: 1, select: { date: true } },
         meals: { orderBy: { createdAt: "desc" }, take: 1, select: { createdAt: true } },
+        gymSessions: { orderBy: { date: "desc" }, take: 1, select: { date: true } },
       },
     }),
     prisma.invite.findMany({ orderBy: { createdAt: "desc" }, take: 30 }),
@@ -41,6 +42,7 @@ export async function loadAdminOverview() {
             u.dailyMetrics[0]?.date,
             u.checkIns[0]?.date,
             u.meals[0]?.createdAt,
+            u.gymSessions[0]?.date,
           ],
         },
         now
