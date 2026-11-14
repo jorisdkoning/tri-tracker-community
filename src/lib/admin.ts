@@ -46,8 +46,19 @@ export async function loadAdminOverview() {
       now
     );
     // Only coarse status leaves this function: admins don't see when someone last trained or ate.
-    const { activities: _a, dailyMetrics: _d, checkIns: _c, meals: _m, gymSessions: _g, ...rest } = u;
-    return { ...rest, status: { active, syncStale } };
+    const { id, name, email, createdAt, isAdmin, onboardedAt, stravaAccount, intervalsAccount, _count } = u;
+    return {
+      id,
+      name,
+      email,
+      createdAt,
+      isAdmin,
+      onboardedAt,
+      stravaAccount,
+      intervalsAccount,
+      _count,
+      status: { active, syncStale },
+    };
   });
   return { users: withStatus, invites };
 }
