@@ -40,7 +40,7 @@ export function NextRaceCard({
         </>
       ) : (
         <p className="mt-3 text-sm text-foreground/60">
-          No upcoming race. Add one to start the countdown.
+          No upcoming event. Add one to start the countdown.
         </p>
       )}
     </Link>

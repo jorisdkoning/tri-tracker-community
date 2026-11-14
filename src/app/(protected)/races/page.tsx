@@ -112,7 +112,7 @@ export default async function RacesPage() {
         <h2 className="text-lg font-medium">Upcoming</h2>
         {upcoming.length === 0 ? (
           <p className="text-sm text-foreground/70">
-            No upcoming races. Add your goal race above.
+            No upcoming events. Add your next goal above.
           </p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
