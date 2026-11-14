@@ -46,6 +46,11 @@ export default async function LoginPage({
         <p className="text-xs text-foreground/55">
           Forgot your password? Ask the person who runs this app for a reset link.
         </p>
+        <p className="text-xs">
+          <Link href="/privacy" className="text-foreground/55 hover:underline">
+            Privacy policy
+          </Link>
+        </p>
       </div>
     </>
   );

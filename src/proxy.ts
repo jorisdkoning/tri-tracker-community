@@ -10,8 +10,8 @@ export const proxy = auth((req) => {
 export const config = {
   // api/ingest, api/mcp and api/calendar are called by Health Auto Export,
   // Claude and calendar apps, and are protected by each user's personal link.
-  // login, signup and reset are the public account pages.
+  // login, signup, reset and privacy are the public pages.
   matcher: [
-    "/((?!api/auth|api/ingest|api/mcp|api/cron|api/calendar|\\.well-known|manifest.webmanifest|icon|apple-icon|login|signup|reset|_next/static|_next/image|favicon.ico).*)",
+    "/((?!api/auth|api/ingest|api/mcp|api/cron|api/calendar|\\.well-known|manifest.webmanifest|icon|apple-icon|login|signup|reset|privacy|_next/static|_next/image|favicon.ico).*)",
   ],
 };
