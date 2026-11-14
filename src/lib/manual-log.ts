@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
+import { localToUtc } from "@/lib/ics";
 import { prisma } from "@/lib/prisma";
 
 export const LOG_KINDS = ["RUN", "BIKE", "SWIM", "GYM", "OTHER"] as const;
@@ -38,7 +39,7 @@ const DEFAULT_NAMES: Record<(typeof LOG_KINDS)[number], string> = {
   OTHER: "Workout",
 };
 
-export async function saveManualWorkout(userId: string, input: z.infer<typeof workoutSchema>) {
+export async function saveManualWorkout(userId: string, timeZone: string, input: z.infer<typeof workoutSchema>) {
   const name = input.name || DEFAULT_NAMES[input.kind];
   if (input.kind === "GYM") {
     await prisma.gymSession.create({
@@ -52,8 +53,7 @@ export async function saveManualWorkout(userId: string, input: z.infer<typeof wo
       intervalsId: `manual:${randomUUID()}`,
       sport: input.kind,
       name,
-      // Noon UTC keeps the workout on the chosen day in every timezone the app uses.
-      startDate: new Date(`${input.date}T12:00:00Z`),
+      startDate: localToUtc(input.date, "12:00", timeZone),
       movingTime: input.minutes * 60,
       distance: (input.distanceKm ?? 0) * 1000,
       rawJson: { source: "manual" },
