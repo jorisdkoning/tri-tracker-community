@@ -1,0 +1,474 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  // Null for accounts that only sign in with Google
+  passwordHash  String?
+  createdAt     DateTime  @default(now())
+
+  // Profile and preferences, set during onboarding and in Settings
+  timezone    String    @default("Europe/Amsterdam")
+  weightKg    Float?
+  currency    String    @default("EUR")
+  showFodmap  Boolean   @default(false)
+  onboardedAt DateTime?
+  // The first account on a deployment becomes admin automatically
+  isAdmin     Boolean   @default(false)
+
+  accounts       Account[]
+  sessions       Session[]
+  personalLinks  PersonalLink[]
+  passwordResets PasswordReset[]
+  invitesCreated Invite[]       @relation("InviteCreator")
+
+  intervalsAccount IntervalsAccount?
+  stravaAccount    StravaAccount?
+  activities       Activity[]
+  segmentEfforts   SegmentEffort[]
+  dailyMetrics     DailyMetric[]
+  fitnessMetrics   FitnessMetric[]
+  expenses         Expense[]
+  races            Race[]
+  plannedWorkouts  PlannedWorkout[]
+  gymSessions      GymSession[]
+  safeFoods        SafeFood[]
+  meals            Meal[]
+  goals            Goal[]
+  coachUsages      CoachUsage[]
+  checkIns         CheckIn[]
+}
+
+// --- Auth.js tables ---
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model IntervalsAccount {
+  id         String    @id @default(cuid())
+  userId     String    @unique
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiKey     String
+  athleteId  String?
+  lastSyncAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model StravaAccount {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  athleteId    BigInt    @unique
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  lastSyncAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+enum Sport {
+  SWIM
+  BIKE
+  RUN
+  OTHER
+}
+
+model Activity {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // External id: intervals.icu id, "strava:<id>", "apple:<start>" or "manual:<cuid>"
+  intervalsId      String
+  sport            Sport
+  name             String
+  startDate        DateTime
+  movingTime       Int // seconds
+  distance         Float // meters
+  avgHr            Float?
+  maxHr            Float?
+  avgPower         Float?
+  weightedAvgPower Float?
+  avgCadence       Float?
+  avgSpeed         Float? // m/s
+  maxSpeed         Float? // m/s
+  elevationGain    Float? // meters
+  kilojoules       Float?
+  trainingLoad     Float? // intervals.icu training load, or Strava's Relative Effort (suffer_score)
+  mapPolyline      String? // Google encoded polyline of the route, from Strava's summary map
+  detailSyncedAt   DateTime? // set once segment efforts have been fetched for this activity
+  rawJson          Json
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  segmentEfforts SegmentEffort[]
+
+  @@unique([userId, intervalsId])
+  @@index([userId, startDate])
+}
+
+model Segment {
+  id            String   @id // Strava segment id, as a string
+  name          String
+  distance      Float
+  averageGrade  Float?
+  elevationHigh Float?
+  elevationLow  Float?
+  startLat      Float?
+  startLng      Float?
+  city          String?
+  state         String?
+  createdAt     DateTime @default(now())
+
+  efforts SegmentEffort[]
+}
+
+model SegmentEffort {
+  id         String   @id // Strava segment effort id, as a string
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activityId String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  segmentId  String
+  segment    Segment  @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  startDate  DateTime
+  movingTime Int // seconds
+  prRank     Int? // 1 = personal record on this segment
+  komRank    Int? // 1-10 if in the segment's all-time top 10
+
+  @@index([userId, segmentId])
+}
+
+model DailyMetric {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date       DateTime @db.Date
+  restingHr  Float?
+  hrv        Float?
+  sleepHours Float?
+  weightKg   Float?
+  source     String   @default("apple_health")
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, date])
+}
+
+model FitnessMetric {
+  id     String   @id @default(cuid())
+  userId String
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date   DateTime @db.Date
+  ctl    Float
+  atl    Float
+  tsb    Float
+
+  @@unique([userId, date])
+}
+
+enum ExpenseCategory {
+  GEAR
+  RACE_ENTRY
+  COACHING
+  NUTRITION
+  TRAVEL
+  OTHER
+}
+
+model Expense {
+  id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime        @db.Date
+  amount    Float
+  currency  String          @default("EUR")
+  category  ExpenseCategory
+  note      String?
+  raceId    String?
+  race      Race?           @relation(fields: [raceId], references: [id], onDelete: SetNull)
+  createdAt DateTime        @default(now())
+
+  @@index([userId, date])
+}
+
+enum DistanceType {
+  SPRINT
+  OLYMPIC
+  HALF_IRONMAN
+  IRONMAN
+  OTHER
+}
+
+model Race {
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  date         DateTime     @db.Date
+  distanceType DistanceType
+  goal         String?
+  notes        String?
+  createdAt    DateTime     @default(now())
+
+  expenses Expense[]
+}
+
+// --- Gym / strength training ---
+
+enum GymSessionType {
+  LEGS_BACK
+  PUSH
+  PULL
+  FULL_BODY
+  OTHER
+}
+
+// How the athlete says they feel (1 = wrecked, 5 = great), once per day.
+model CheckIn {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  feeling   Int
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+}
+
+// Daily Coach (Anthropic API) spend, used to enforce a hard daily cap.
+model CoachUsage {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date       DateTime @db.Date
+  costMicros Int      @default(0)
+  requests   Int      @default(0)
+
+  @@unique([userId, date])
+}
+
+// Workouts scheduled in the intervals.icu calendar (synced read-only).
+model PlannedWorkout {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  externalId  String
+  date        DateTime @db.Date
+  startTime   String?
+  sport       Sport
+  name        String
+  description String?
+  durationSec Int?
+  plannedLoad Float?
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, externalId])
+  @@index([userId, date])
+}
+
+model GymSession {
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date        DateTime       @db.Date
+  sessionType GymSessionType @default(OTHER)
+  notes       String?
+  // "apple_health" (session summary synced from Apple Health) or "manual"
+  source      String         @default("apple_health")
+  durationSec Int?
+  calories    Int?
+  createdAt   DateTime       @default(now())
+
+  @@index([userId, date])
+}
+
+// --- Nutrition ---
+
+enum MealType {
+  BREAKFAST
+  PRE_TRAINING
+  ON_BIKE
+  LUNCH
+  DINNER
+  SNACK
+}
+
+enum FodmapRisk {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model SafeFood {
+  id              String     @id @default(cuid())
+  userId          String
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  calories        Int?
+  proteinG        Int?
+  carbsG          Int?
+  fodmapRisk      FodmapRisk @default(LOW)
+  containsLactose Boolean    @default(false)
+  containsGluten  Boolean    @default(false)
+  containsOnion   Boolean    @default(false)
+  isRideFood      Boolean    @default(false)
+  notes           String?
+  createdAt       DateTime   @default(now())
+
+  meals Meal[]
+
+  @@index([userId])
+}
+
+model Meal {
+  id          String     @id @default(cuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date        DateTime   @db.Date
+  mealType    MealType
+  description String
+  calories    Int?
+  proteinG    Int?
+  fodmapRisk  FodmapRisk @default(LOW)
+  safeFoodId  String?
+  safeFood    SafeFood?  @relation(fields: [safeFoodId], references: [id], onDelete: SetNull)
+  createdAt   DateTime   @default(now())
+
+  @@index([userId, date])
+}
+
+// --- Goals (specific numeric targets, separate from the general Race list) ---
+
+enum GoalMetric {
+  CYCLING_SPEED_KMH
+  SWIM_PACE_SEC_PER_100M
+  RUN_PACE_SEC_PER_KM
+  WEIGHT_KG
+  CUSTOM
+}
+
+enum GoalDirection {
+  INCREASE
+  DECREASE
+}
+
+model Goal {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label       String
+  metric      GoalMetric
+  targetValue Float
+  direction   GoalDirection
+  deadline    DateTime?     @db.Date
+  notes       String?
+  createdAt   DateTime      @default(now())
+
+  @@index([userId])
+}
+
+// --- Multi-user: personal links, sign-up control, password resets ---
+
+enum LinkKind {
+  HEALTH // Health Auto Export (Apple Health) push URL
+  CALENDAR // iCalendar subscription feed
+  CLAUDE // MCP connector for Claude
+}
+
+// A secret per-user URL. The token is looked up by its SHA-256 hash and kept
+// encrypted (ENCRYPTION_KEY) so Settings can show the link again.
+model PersonalLink {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      LinkKind
+  tokenHash String   @unique
+  tokenEnc  String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, kind])
+}
+
+enum SignupMode {
+  OPEN // anyone with the URL can create an account
+  INVITE // only people with an invite link
+  CLOSED // nobody new
+}
+
+// Single-row table (id = 1) with deployment-wide settings managed in /admin.
+model AppSetting {
+  id         Int        @id @default(1)
+  signupMode SignupMode @default(OPEN)
+  updatedAt  DateTime   @updatedAt
+}
+
+model Invite {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  note        String?
+  createdById String
+  createdBy   User      @relation("InviteCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  usedByEmail String?
+  usedAt      DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+}
+
+// One-time password reset link, created by an admin (there is no email sending).
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
