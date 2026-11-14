@@ -13,13 +13,16 @@ import { Recovery } from "./_dashboard/Recovery";
 import { GoalsCard } from "./_dashboard/GoalsCard";
 import { FuelAndSpend } from "./_dashboard/FuelAndSpend";
 import { ReadinessCard } from "./_dashboard/ReadinessCard";
+import { AchievementsCard } from "./_dashboard/AchievementsCard";
+import { loadAchievements } from "@/lib/achievements-data";
 
 export default async function DashboardPage() {
   const user = await requireUser();
   const hideChecklist = (await cookies()).get("hide_getting_started")?.value === user.id;
-  const [data, steps] = await Promise.all([
+  const [data, steps, achievements] = await Promise.all([
     loadDashboardData(user.id, user.timezone),
     hideChecklist ? null : loadGettingStarted(user.id),
+    loadAchievements(user.id, user.timezone),
   ]);
 
   return (
@@ -52,6 +55,8 @@ export default async function DashboardPage() {
         <GoalsCard goals={data.goals} />
         <FuelAndSpend fuel={data.fuel} monthSpend={data.monthSpend} currency={user.currency} />
       </div>
+
+      <AchievementsCard achievements={achievements} />
     </div>
   );
 }
