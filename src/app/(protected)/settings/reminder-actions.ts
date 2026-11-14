@@ -5,9 +5,10 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { sendPushToUser } from "@/lib/push";
+import { isAllowedPushEndpoint } from "@/lib/push-endpoint";
 
 const subscriptionSchema = z.object({
-  endpoint: z.string().url().startsWith("https://").max(1000),
+  endpoint: z.string().max(1000).refine(isAllowedPushEndpoint),
   keys: z.object({ p256dh: z.string().min(1).max(200), auth: z.string().min(1).max(100) }),
 });
 

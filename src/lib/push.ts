@@ -1,5 +1,6 @@
 import webpush from "web-push";
 import { prisma } from "@/lib/prisma";
+import { isAllowedPushEndpoint } from "@/lib/push-endpoint";
 
 export interface PushMessage {
   title: string;
@@ -29,6 +30,7 @@ export async function sendPushToUser(userId: string, message: PushMessage): Prom
   const subs = await prisma.pushSubscription.findMany({ where: { userId } });
   let sent = 0;
   for (const sub of subs) {
+    if (!isAllowedPushEndpoint(sub.endpoint)) continue;
     try {
       await webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
