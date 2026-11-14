@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { effectiveFodmapRisk } from "@/lib/nutrition";
+import { checkRestrictions } from "@/lib/food-restrictions";
 import { computeNutritionPlan } from "@/lib/nutrition-plan";
 
 
@@ -15,7 +15,7 @@ export interface InsightDay {
   targetProtein: number;
   tier: string;
   trainingMin: number;
-  highFodmapMeals: number;
+  flaggedMeals: number;
 }
 
 export interface Insight {
@@ -60,7 +60,7 @@ export async function computeNutritionInsights(
   userId: string,
   timeZone: string,
   windowDays = 14,
-  showFodmap = false
+  foodRestrictions: string[] = []
 ): Promise<NutritionInsights> {
   const today = new Date(localDateString(timeZone));
   const start = new Date(today.getTime() - windowDays * DAY_MS);
@@ -91,7 +91,7 @@ export async function computeNutritionInsights(
       targetProtein: plan.targets.proteinG,
       tier: plan.tier,
       trainingMin: Math.round(plan.enduranceMin + plan.gymMin * 0.5),
-      highFodmapMeals: dayMeals.filter((m) => effectiveFodmapRisk(m) === "HIGH").length,
+      flaggedMeals: dayMeals.filter((m) => checkRestrictions(m.description, foodRestrictions).length > 0).length,
     };
   });
 
@@ -214,7 +214,7 @@ export async function computeNutritionInsights(
         title: `Protein is about ${short} g per day short`,
         detail: `You averaged ${round(avgProtein)} g against a target of ${round(avgTargetProtein)} g, and reached it on ${hit} of ${logged.length} logged days.`,
         action:
-          "Aim for 25 to 35 g at each main meal. Lactose-free and gluten-free options: eggs, chicken, fish and prawns, tofu or tempeh (check the label), lactose-free yoghurt or skyr, and a lactose-free protein powder in a smoothie.",
+          "Aim for 25 to 35 g at each main meal. Easy options: eggs, chicken, fish, tofu or tempeh, beans and lentils, yoghurt or skyr, or a protein shake. Skip whatever doesn't fit your food restrictions.",
       });
     } else {
       insights.push({
@@ -225,24 +225,27 @@ export async function computeNutritionInsights(
     }
   }
 
-  // 6. FODMAP
-  const fodmapMeals = showFodmap ? meals.filter((m) => effectiveFodmapRisk(m) === "HIGH") : [];
-  if (!showFodmap) {
-    // The athlete does not follow a low-FODMAP diet.
-  } else if (fodmapMeals.length > 0) {
-    const names = [...new Set(fodmapMeals.map((m) => m.description))].slice(0, 3).join("; ");
-    insights.push({
-      severity: "medium",
-      title: `${fodmapMeals.length} meal${fodmapMeals.length === 1 ? "" : "s"} flagged as high FODMAP`,
-      detail: `For example: ${names}.`,
-      action: "Swap the flagged ingredient (onion, garlic, wheat, lactose, apple, pear, cashew) for an alternative from your saved foods.",
-    });
-  } else if (logged.length > 0) {
-    insights.push({
-      severity: "good",
-      title: "No high-FODMAP meals flagged",
-      detail: "Nothing in your logged meals matched the keywords the app checks. It only knows a short list, so use your own judgement too.",
-    });
+  // 6. Food restrictions
+  if (foodRestrictions.length > 0) {
+    const flagged = meals
+      .map((m) => ({ meal: m, flags: checkRestrictions(m.description, foodRestrictions) }))
+      .filter((x) => x.flags.length > 0);
+    if (flagged.length > 0) {
+      const names = [...new Set(flagged.map((x) => x.meal.description))].slice(0, 3).join("; ");
+      const words = [...new Set(flagged.flatMap((x) => x.flags.flatMap((f) => f.matched)))].slice(0, 6).join(", ");
+      insights.push({
+        severity: "medium",
+        title: `${flagged.length} meal${flagged.length === 1 ? "" : "s"} may not fit your food restrictions`,
+        detail: `For example: ${names}.`,
+        action: `Look for an alternative to: ${words}. Your saved foods are a good place to start.`,
+      });
+    } else if (logged.length > 0) {
+      insights.push({
+        severity: "good",
+        title: "Your meals fit your food restrictions",
+        detail: "Nothing you logged matched the words the app checks for. It only knows common words, so use your own judgement too.",
+      });
+    }
   }
 
   // 7. Meal distribution

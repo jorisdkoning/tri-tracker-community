@@ -21,7 +21,7 @@ function daysUntil(date: Date) {
 export async function buildCoachContext(userId: string): Promise<string> {
   const profile = await prisma.user.findUnique({
     where: { id: userId },
-    select: { timezone: true, currency: true, weightKg: true, showFodmap: true },
+    select: { timezone: true, currency: true, weightKg: true, foodRestrictions: true },
   });
   const timeZone = profile?.timezone ?? DEFAULT_TIMEZONE;
   const now = new Date();
@@ -190,7 +190,7 @@ export async function buildCoachContext(userId: string): Promise<string> {
   lines.push("");
   lines.push("## Nutrition (last 14 completed days, against targets that follow training)");
   try {
-    lines.push(...nutritionInsightsText(await computeNutritionInsights(userId, timeZone, 14, profile?.showFodmap ?? false)));
+    lines.push(...nutritionInsightsText(await computeNutritionInsights(userId, timeZone, 14, profile?.foodRestrictions ?? [])));
   } catch {
     lines.push("Nutrition summary unavailable.");
   }

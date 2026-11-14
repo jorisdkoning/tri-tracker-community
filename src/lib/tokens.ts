@@ -38,7 +38,7 @@ export async function findUserByLinkToken(kind: LinkKind, token: string) {
   if (!token || token.length < 20 || token.length > 100) return null;
   const link = await prisma.personalLink.findUnique({
     where: { tokenHash: hashToken(token) },
-    select: { kind: true, user: { select: { id: true, timezone: true, showFodmap: true } } },
+    select: { kind: true, user: { select: { id: true, timezone: true, foodRestrictions: true } } },
   });
   return link && link.kind === kind ? link.user : null;
 }

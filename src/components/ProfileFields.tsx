@@ -1,17 +1,19 @@
 import { CURRENCIES, allTimezones } from "@/lib/profile";
+import { RESTRICTION_PRESETS, splitRestrictions } from "@/lib/food-restrictions";
 
 export interface ProfileValues {
   name: string | null;
   timezone: string;
   weightKg: number | null;
   currency: string;
-  showFodmap: boolean;
+  foodRestrictions: string[];
 }
 
 const labelCls = "block space-y-1";
 const hintCls = "block text-xs text-foreground/55";
 
 export function ProfileFields({ values }: { values: ProfileValues }) {
+  const { presets, custom } = splitRestrictions(values.foodRestrictions);
   return (
     <div className="space-y-4">
       <label className={labelCls}>
@@ -53,15 +55,39 @@ export function ProfileFields({ values }: { values: ProfileValues }) {
           <span className={hintCls}>For the budget page.</span>
         </label>
       </div>
-      <label className="flex items-start gap-3">
-        <input type="checkbox" name="showFodmap" defaultChecked={values.showFodmap} className="mt-1 h-4 w-4" />
-        <span className="text-sm">
-          <span className="font-medium">Warn me about high-FODMAP food</span>
-          <span className={hintCls}>
-            Only turn this on if you follow a low-FODMAP diet (for a sensitive stomach).
-          </span>
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">Food you avoid (optional)</legend>
+        <span className={hintCls}>
+          Tick what applies to you. Meals that seem to contain it get a warning on the Nutrition page.
         </span>
-      </label>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {RESTRICTION_PRESETS.map((preset) => (
+            <label key={preset.id} className="flex items-start gap-2 rounded-md border border-line px-3 py-2">
+              <input
+                type="checkbox"
+                name="restriction"
+                value={preset.id}
+                defaultChecked={presets.includes(preset.id)}
+                className="mt-1 h-4 w-4"
+              />
+              <span className="text-sm">
+                <span className="font-medium">{preset.label}</span>
+                <span className={hintCls}>{preset.hint}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+        <label className={labelCls}>
+          <span className="text-sm">Anything else? Separate with commas.</span>
+          <input
+            name="customRestrictions"
+            defaultValue={custom.join(", ")}
+            placeholder="e.g. mushrooms, coriander, sesame"
+            maxLength={600}
+            className="field"
+          />
+        </label>
+      </fieldset>
     </div>
   );
 }

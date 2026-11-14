@@ -17,7 +17,7 @@ const USER_SELECT = {
   timezone: true,
   weightKg: true,
   currency: true,
-  showFodmap: true,
+  foodRestrictions: true,
   onboardedAt: true,
   isAdmin: true,
   passwordHash: true,

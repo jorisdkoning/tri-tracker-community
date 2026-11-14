@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isValidTimezone } from "@/lib/time";
+import { normalizeRestrictions } from "@/lib/food-restrictions";
 
 export const CURRENCIES = ["EUR", "USD", "GBP", "CHF", "AUD", "CAD", "NZD", "SEK", "NOK", "DKK", "ZAR", "JPY"] as const;
 
@@ -10,7 +11,7 @@ export const profileSchema = z.object({
     .union([z.literal(""), z.coerce.number().min(25, "Weight looks too low").max(250, "Weight looks too high")])
     .transform((v) => (v === "" ? null : v)),
   currency: z.enum(CURRENCIES),
-  showFodmap: z.boolean(),
+  foodRestrictions: z.array(z.string()),
 });
 
 export function parseProfileForm(formData: FormData) {
@@ -19,7 +20,10 @@ export function parseProfileForm(formData: FormData) {
     timezone: formData.get("timezone") ?? "",
     weightKg: String(formData.get("weightKg") ?? "").replace(",", ".").trim(),
     currency: formData.get("currency") ?? "EUR",
-    showFodmap: formData.get("showFodmap") === "on",
+    foodRestrictions: normalizeRestrictions(
+      formData.getAll("restriction").map(String),
+      String(formData.get("customRestrictions") ?? "")
+    ),
   });
 }
 

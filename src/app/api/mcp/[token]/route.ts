@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { checkFodmap, effectiveFodmapRisk } from "@/lib/nutrition";
+import { checkRestrictions, restrictionWarning } from "@/lib/food-restrictions";
 import { computeNutritionPlan } from "@/lib/nutrition-plan";
 
 import { localDateString, localHour } from "@/lib/time";
@@ -39,23 +39,26 @@ function text(message: string) {
   return { content: [{ type: "text" as const, text: message }] };
 }
 
+function warningSuffix(description: string, restrictions: string[]) {
+  const warning = restrictionWarning(checkRestrictions(description, restrictions));
+  return warning ? `, ${warning}` : "";
+}
+
 function dayLines(
-  showFodmap: boolean,
+  restrictions: string[],
   meals: {
     id: string;
     mealType: string;
     description: string;
     calories: number | null;
     proteinG: number | null;
-    fodmapRisk: string;
-    safeFoodId: string | null;
   }[]
 ) {
   const kcal = meals.reduce((sum, m) => sum + (m.calories ?? 0), 0);
   const protein = meals.reduce((sum, m) => sum + (m.proteinG ?? 0), 0);
   const lines = meals.map(
     (m) =>
-      `- [${m.id}] ${m.mealType.toLowerCase()}: ${m.description} (${m.calories ?? "?"} kcal, ${m.proteinG ?? "?"} g protein${showFodmap && effectiveFodmapRisk(m) === "HIGH" ? ", HIGH FODMAP" : ""})`
+      `- [${m.id}] ${m.mealType.toLowerCase()}: ${m.description} (${m.calories ?? "?"} kcal, ${m.proteinG ?? "?"} g protein${warningSuffix(m.description, restrictions)})`
   );
   return { kcal, protein, lines };
 }
@@ -69,7 +72,7 @@ async function targetLine(userId: string, timeZone: string, day: string, kcal: n
   ].join("\n");
 }
 
-function buildServer(userId: string, timeZone: string, showFodmap: boolean) {
+function buildServer(userId: string, timeZone: string, restrictions: string[]) {
   const server = new McpServer({ name: "fitlog", version: "1.0.0" });
 
   server.registerTool(
@@ -87,7 +90,7 @@ function buildServer(userId: string, timeZone: string, showFodmap: boolean) {
     },
     async ({ description, calories, protein_g, meal_type, date }) => {
       const day = date ?? localDateString(timeZone);
-      const check = checkFodmap(description);
+      const warning = restrictionWarning(checkRestrictions(description, restrictions));
 
       const meal = await prisma.meal.create({
         data: {
@@ -97,18 +100,15 @@ function buildServer(userId: string, timeZone: string, showFodmap: boolean) {
           description,
           calories: calories ?? null,
           proteinG: protein_g ?? null,
-          fodmapRisk: check.risk === "high" ? "HIGH" : "LOW",
         },
       });
 
       const meals = await prisma.meal.findMany({ where: { userId, date: new Date(day) } });
-      const totals = dayLines(showFodmap, meals);
+      const totals = dayLines(restrictions, meals);
       return text(
         [
           `Logged (${meal.id}): ${description}${calories ? `, ${calories} kcal` : ""}${protein_g != null ? `, ${protein_g} g protein` : ""}.`,
-          showFodmap && check.risk === "high"
-            ? `Heads up: contains possible high-FODMAP ingredient(s): ${check.matched.join(", ")}.`
-            : null,
+          warning ? `Heads up, this may not fit the user's food restrictions. ${warning}.` : null,
           `Total for ${day}: ${totals.kcal} kcal, ${totals.protein} g protein across ${meals.length} entries.`,
           await targetLine(userId, timeZone, day, totals.kcal, totals.protein),
         ]
@@ -131,7 +131,7 @@ function buildServer(userId: string, timeZone: string, showFodmap: boolean) {
         orderBy: { createdAt: "asc" },
       });
       if (meals.length === 0) return text(`Nothing logged for ${day}.`);
-      const totals = dayLines(showFodmap, meals);
+      const totals = dayLines(restrictions, meals);
       return text(
         `${day}: ${totals.kcal} kcal, ${totals.protein} g protein\n${totals.lines.join("\n")}\n${await targetLine(userId, timeZone, day, totals.kcal, totals.protein)}`
       );
@@ -167,7 +167,7 @@ function buildServer(userId: string, timeZone: string, showFodmap: boolean) {
         foods
           .map(
             (f) =>
-              `- ${f.name}: ${f.calories ?? "?"} kcal, ${f.proteinG ?? "?"} g protein, FODMAP ${f.fodmapRisk.toLowerCase()}`
+              `- ${f.name}: ${f.calories ?? "?"} kcal, ${f.proteinG ?? "?"} g protein`
           )
           .join("\n")
       );
@@ -188,7 +188,7 @@ async function handle(
     return new Response("Not found", { status: 404 });
   }
 
-  const server = buildServer(user.id, user.timezone, user.showFodmap);
+  const server = buildServer(user.id, user.timezone, user.foodRestrictions);
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,

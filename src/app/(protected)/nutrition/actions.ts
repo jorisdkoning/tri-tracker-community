@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { checkFodmap } from "@/lib/nutrition";
 
 import { requireUserId } from "@/lib/session";
 const mealSchema = z.object({
@@ -54,11 +53,6 @@ export async function addMeal(formData: FormData) {
   }
 
   if (!description) throw new Error("A description or saved food is required");
-
-  if (fodmapRisk === "LOW") {
-    const check = checkFodmap(description);
-    fodmapRisk = check.risk === "high" ? "HIGH" : "LOW";
-  }
 
   await prisma.meal.create({
     data: {

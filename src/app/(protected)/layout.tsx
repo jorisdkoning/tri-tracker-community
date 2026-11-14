@@ -15,7 +15,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-xs font-bold text-white">
-                TT
+                FL
               </span>
               <span className="font-semibold tracking-tight">{APP_NAME}</span>
             </div>

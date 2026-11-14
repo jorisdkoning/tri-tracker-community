@@ -23,7 +23,8 @@ model User {
   timezone    String    @default("Europe/Amsterdam")
   weightKg    Float?
   currency    String    @default("EUR")
-  showFodmap  Boolean   @default(false)
+  // Preset ids (see lib/food-restrictions) and the user's own words to avoid
+  foodRestrictions String[] @default([])
   onboardedAt DateTime?
   // The first account on a deployment becomes admin automatically
   isAdmin     Boolean   @default(false)

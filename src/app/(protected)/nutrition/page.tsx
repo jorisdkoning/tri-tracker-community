@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { MealType } from "@prisma/client";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { effectiveFodmapRisk } from "@/lib/nutrition";
+import { checkRestrictions, restrictionWarning } from "@/lib/food-restrictions";
 import { computeNutritionPlan } from "@/lib/nutrition-plan";
 import { addMeal, deleteMeal, addSafeFood, deleteSafeFood } from "./actions";
 
@@ -88,7 +88,7 @@ export default async function NutritionPage() {
         </Link>
       </div>
       <p className="text-sm text-foreground/70">
-        {user.showFodmap && "Low-FODMAP as a guide: meals with common trigger foods get a warning. "}
+        {user.foodRestrictions.length > 0 && "Meals that may not fit your food restrictions get a warning. "}
         Today looks like a <strong>{tier}</strong> day.
       </p>
       <ul className="list-disc space-y-1 pl-5 text-sm text-foreground/70">
@@ -220,11 +220,16 @@ export default async function NutritionPage() {
                         {meal.description}
                         {meal.calories != null && ` · ${meal.calories}kcal`}
                         {meal.proteinG != null && ` · ${meal.proteinG}g protein`}
-                        {user.showFodmap && effectiveFodmapRisk(meal) === "HIGH" && (
-                          <span className="ml-2 text-amber-600 dark:text-amber-400">
-                            ⚠ high-FODMAP
-                          </span>
-                        )}
+                        {(() => {
+                          const warning = restrictionWarning(
+                            checkRestrictions(meal.description, user.foodRestrictions)
+                          );
+                          return (
+                            warning && (
+                              <span className="ml-2 text-amber-600 dark:text-amber-400">⚠ {warning}</span>
+                            )
+                          );
+                        })()}
                       </span>
                       <form action={deleteMeal}>
                         <input type="hidden" name="id" value={meal.id} />

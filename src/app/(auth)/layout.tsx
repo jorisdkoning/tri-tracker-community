@@ -6,7 +6,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="w-full max-w-sm space-y-6">
         <div className="flex items-center justify-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-sm font-bold text-white">
-            TT
+            FL
           </span>
           <span className="text-lg font-semibold tracking-tight">{APP_NAME}</span>
         </div>
