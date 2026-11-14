@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { runIntervalsSync, runStravaSync } from "@/lib/sync";
 import { orderForSync } from "@/lib/cron-order";
-import { safeEqual } from "@/lib/secrets";
+import { cronAuthorized } from "@/lib/cron-auth";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -13,12 +13,6 @@ export const maxDuration = 60;
 const CRON_WINDOW_DAYS = 14;
 // Stop starting new users after this, so the run ends before maxDuration.
 const TIME_BUDGET_MS = 45_000;
-
-function authorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret || secret.length < 16) return false;
-  return safeEqual(request.headers.get("authorization") ?? "", `Bearer ${secret}`);
-}
 
 async function attempt(job: () => Promise<unknown>): Promise<boolean> {
   try {
@@ -31,7 +25,7 @@ async function attempt(job: () => Promise<unknown>): Promise<boolean> {
 }
 
 export async function GET(request: Request) {
-  if (!authorized(request)) {
+  if (!cronAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

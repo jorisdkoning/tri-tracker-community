@@ -13,6 +13,8 @@ import { IntervalsForm } from "./IntervalsForm";
 import { ProfileForm } from "./ProfileForm";
 import { DeleteAccountForm, PasswordForm } from "./AccountForms";
 import { ConnectionCard, NewLinkButton, Steps } from "./_parts";
+import { RemindersCard } from "./RemindersCard";
+import { vapidPublicKey } from "@/lib/push";
 
 const STRAVA_ERRORS: Record<string, string> = {
   denied: "You cancelled the Strava connection. You can try again any time.",
@@ -55,7 +57,10 @@ export default async function SettingsPage({
     getOrCreateLinkToken(user.id, "HEALTH"),
     getOrCreateLinkToken(user.id, "CALENDAR"),
     getOrCreateLinkToken(user.id, "CLAUDE"),
-    prisma.user.findUnique({ where: { id: user.id }, select: { anthropicApiKey: true } }),
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: { anthropicApiKey: true, remindCheckIn: true, remindWeekly: true },
+    }),
   ]);
   const hasClaudeKey = Boolean(coachKey?.anthropicApiKey);
   const healthUrl = `${base}/api/ingest/health/${healthToken}`;
@@ -265,6 +270,21 @@ export default async function SettingsPage({
           <NewLinkButton kind="CLAUDE" />
         </ConnectionCard>
       </div>
+
+      <section id="reminders" className="card scroll-mt-20 space-y-3 p-5">
+        <div>
+          <h2 className="text-lg font-semibold">Reminders</h2>
+          <p className="text-sm text-foreground/65">
+            A nudge on your phone or computer to check in, and a short weekly summary. Turn it on for each device you
+            use.
+          </p>
+        </div>
+        <RemindersCard
+          vapidKey={vapidPublicKey()}
+          remindCheckIn={coachKey?.remindCheckIn ?? true}
+          remindWeekly={coachKey?.remindWeekly ?? true}
+        />
+      </section>
 
       <section className="card space-y-4 p-5">
         <h2 className="text-lg font-semibold">Your profile</h2>

@@ -27,6 +27,10 @@ model User {
   foodRestrictions String[] @default([])
   // The user's own Anthropic API key for the AI coach, encrypted (lib/crypto)
   anthropicApiKey String?
+  // Phone/browser reminders (only sent to devices in pushSubscriptions)
+  remindCheckIn     Boolean            @default(true)
+  remindWeekly      Boolean            @default(true)
+  pushSubscriptions PushSubscription[]
   onboardedAt DateTime?
   // The first account on a deployment becomes admin automatically
   isAdmin     Boolean   @default(false)
@@ -479,4 +483,17 @@ model PasswordReset {
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime  @default(now())
+}
+
+// A browser or installed app that agreed to receive notifications.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }

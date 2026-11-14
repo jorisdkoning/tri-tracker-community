@@ -63,6 +63,12 @@ Vercel plan allows one cron job, which is all this needs.
   Anthropic account, and `COACH_DAILY_BUDGET_CENTS` caps that spend per person per day.
 - **Your own name:** set `NEXT_PUBLIC_APP_NAME`.
 
+- **Reminders (phone notifications):** run `npx web-push generate-vapid-keys` and add
+  `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT`
+  (`mailto:you@example.com`). People then switch reminders on under Settings → Reminders.
+  On iPhone this works once FitLog is added to the home screen. The daily run is at
+  17:00 UTC (`vercel.json`).
+
 ### Updating
 
 Pull the latest code into your fork (GitHub: *Sync fork*). If the update has a new
