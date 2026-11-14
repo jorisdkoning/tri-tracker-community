@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeReadiness, hrvScore, loadScore, restingHrScore, sleepScore } from "../readiness";
+import { computeReadiness, hrvScore, loadScore, readinessFromHistory, restingHrScore, sleepScore } from "../readiness";
 
 const empty = {
   sleepHours: null,
@@ -38,5 +38,28 @@ describe("computeReadiness", () => {
     const r = computeReadiness({ ...empty, sleepHours: 5, tsb: -25, feeling: 2, restingHr: 56, restingHrBaseline: 50 });
     expect(r?.score).toBeLessThan(40);
     expect(r?.advice).toContain("resting heart rate");
+  });
+});
+
+describe("readinessFromHistory", () => {
+  const today = new Date("2026-11-14T00:00:00Z");
+  const day = (n: number) => new Date(today.getTime() - n * 86400000);
+  const older = Array.from({ length: 6 }, (_, i) => ({ date: day(i + 2), sleepHours: 8, hrv: 60, restingHr: 50 }));
+
+  it("keeps yesterday's recovery when today's row only has a weigh-in", () => {
+    const rows = [
+      { date: day(0), sleepHours: null, hrv: null, restingHr: null },
+      { date: day(1), sleepHours: 5, hrv: 42, restingHr: 58 },
+      ...older,
+    ];
+    const result = readinessFromHistory(rows, undefined, 5, today);
+    expect(result?.parts.map((p) => p.key)).toEqual(expect.arrayContaining(["sleep", "hrv", "restingHr"]));
+    expect(result!.score).toBeLessThan(60);
+  });
+
+  it("ignores stale readings and uses older rows as the baseline", () => {
+    expect(readinessFromHistory(older, undefined, null, today)).toBeNull();
+    const rows = [{ date: day(0), sleepHours: 8, hrv: 66, restingHr: 48 }, ...older];
+    expect(readinessFromHistory(rows, undefined, null, today)!.score).toBeGreaterThanOrEqual(80);
   });
 });

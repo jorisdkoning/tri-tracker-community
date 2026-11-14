@@ -1,6 +1,7 @@
 // "How ready am I today?" score. Pure, no database access.
 // Each signal becomes a 0-100 part; the score is their weighted average over
 // whatever signals the person actually has (at least two are needed).
+import { DAY_MS } from "@/lib/time";
 
 export interface ReadinessInput {
   sleepHours: number | null;
@@ -107,4 +108,34 @@ export function computeReadiness(input: ReadinessInput): Readiness | null {
 
 export function average(values: number[]): number | null {
   return values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : null;
+}
+
+export type HealthRow = { date: Date; sleepHours: number | null; hrv: number | null; restingHr: number | null };
+
+// healthRows newest first. Each of last night's numbers comes from the newest
+// row dated today or yesterday that has it (a weigh-in alone must not hide
+// yesterday's sleep); baselines are the person's own average of older rows.
+export function readinessFromHistory(
+  healthRows: HealthRow[],
+  fitness: { date: Date; tsb: number } | undefined,
+  feeling: number | null,
+  today: Date
+): Readiness | null {
+  const fresh = (date: Date) => today.getTime() - date.getTime() <= DAY_MS;
+  const recent = healthRows.filter((r) => fresh(r.date));
+  const history = healthRows.filter((r) => !fresh(r.date)).slice(0, 28);
+  const latest = (key: keyof Omit<HealthRow, "date">) => recent.find((r) => r[key] != null)?.[key] ?? null;
+  const baseline = (key: "hrv" | "restingHr") => {
+    const values = history.map((r) => r[key]).filter((v): v is number => v != null);
+    return values.length >= 5 ? average(values) : null;
+  };
+  return computeReadiness({
+    sleepHours: latest("sleepHours"),
+    hrv: latest("hrv"),
+    hrvBaseline: baseline("hrv"),
+    restingHr: latest("restingHr"),
+    restingHrBaseline: baseline("restingHr"),
+    tsb: fitness && today.getTime() - fitness.date.getTime() <= 2 * DAY_MS ? fitness.tsb : null,
+    feeling,
+  });
 }

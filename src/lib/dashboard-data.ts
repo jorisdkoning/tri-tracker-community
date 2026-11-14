@@ -5,7 +5,7 @@ import { DAY_MS, localDateString, localWeekStartDate } from "@/lib/time";
 import { computeNutritionPlan, type NutritionPlan } from "@/lib/nutrition-plan";
 import { computeGoalProgress, type GoalProgress } from "@/lib/goals";
 import { checkInNudge, type CheckInEntry } from "@/lib/checkin";
-import { average, computeReadiness, type Readiness } from "@/lib/readiness";
+import { readinessFromHistory, type Readiness } from "@/lib/readiness";
 import {
   combineRecent,
   formLabel,
@@ -159,34 +159,6 @@ export async function loadDashboardData(userId: string, timeZone: string): Promi
       recent: checkIns,
       nudge: checkInNudge(checkIns),
     },
-    readiness: readinessFor(healthRows, latest, todayFeeling, today),
+    readiness: readinessFromHistory(healthRows, latest, todayFeeling, today),
   };
-}
-
-type HealthRow = { date: Date; sleepHours: number | null; hrv: number | null; restingHr: number | null };
-
-// Uses last night's numbers (dated today or yesterday) against the person's own
-// average of the 4 weeks before.
-function readinessFor(
-  healthRows: HealthRow[],
-  fitness: { date: Date; tsb: number } | undefined,
-  feeling: number | null,
-  today: Date
-): Readiness | null {
-  const fresh = (date: Date) => today.getTime() - date.getTime() <= DAY_MS;
-  const current = healthRows[0] && fresh(healthRows[0].date) ? healthRows[0] : null;
-  const history = healthRows.slice(current ? 1 : 0, 29);
-  const baseline = (key: "hrv" | "restingHr") => {
-    const values = history.map((r) => r[key]).filter((v): v is number => v != null);
-    return values.length >= 5 ? average(values) : null;
-  };
-  return computeReadiness({
-    sleepHours: current?.sleepHours ?? null,
-    hrv: current?.hrv ?? null,
-    hrvBaseline: baseline("hrv"),
-    restingHr: current?.restingHr ?? null,
-    restingHrBaseline: baseline("restingHr"),
-    tsb: fitness && today.getTime() - fitness.date.getTime() <= 2 * DAY_MS ? fitness.tsb : null,
-    feeling,
-  });
 }
