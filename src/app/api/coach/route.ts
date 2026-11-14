@@ -64,6 +64,10 @@ export async function POST(request: Request) {
       });
       claudeStream.on("end", async () => {
         if (failed) return;
+        if (coachKey.ownKey) {
+          controller.close();
+          return;
+        }
         try {
           const final = await claudeStream.finalMessage();
           await recordCoachUsage(
