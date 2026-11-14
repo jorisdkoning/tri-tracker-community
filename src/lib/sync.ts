@@ -79,18 +79,19 @@ export async function runIntervalsSync(userId: string, windowDays = FULL_SYNC_DA
   }
 
   for (const day of wellness) {
-    if (day.ctl == null || day.atl == null) continue;
-    await prisma.fitnessMetric.upsert({
-      where: { userId_date: { userId, date: new Date(day.id) } },
-      update: { ctl: day.ctl, atl: day.atl, tsb: day.ctl - day.atl },
-      create: {
-        userId,
-        date: new Date(day.id),
-        ctl: day.ctl,
-        atl: day.atl,
-        tsb: day.ctl - day.atl,
-      },
-    });
+    if (day.ctl != null && day.atl != null) {
+      await prisma.fitnessMetric.upsert({
+        where: { userId_date: { userId, date: new Date(day.id) } },
+        update: { ctl: day.ctl, atl: day.atl, tsb: day.ctl - day.atl },
+        create: {
+          userId,
+          date: new Date(day.id),
+          ctl: day.ctl,
+          atl: day.atl,
+          tsb: day.ctl - day.atl,
+        },
+      });
+    }
 
     // Only update fields intervals.icu actually has, so values ingested
     // from Apple Health for the same day are not clobbered with nulls.
