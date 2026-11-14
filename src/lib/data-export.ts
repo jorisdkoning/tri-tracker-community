@@ -1,0 +1,83 @@
+import { prisma } from "@/lib/prisma";
+
+// Everything a user logged or synced, without secrets (password hash, API keys,
+// OAuth tokens, personal link tokens).
+export async function exportUserData(userId: string) {
+  const where = { userId };
+  const [
+    profile,
+    activities,
+    segmentEfforts,
+    dailyMetrics,
+    fitnessMetrics,
+    plannedWorkouts,
+    gymSessions,
+    meals,
+    savedFoods,
+    checkIns,
+    events,
+    goals,
+    expenses,
+    coachUsage,
+    intervals,
+    strava,
+    groups,
+    cyclePeriods,
+  ] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        name: true,
+        email: true,
+        createdAt: true,
+        timezone: true,
+        weightKg: true,
+        currency: true,
+        foodRestrictions: true,
+        onboardedAt: true,
+        isAdmin: true,
+      },
+    }),
+    prisma.activity.findMany({ where, orderBy: { startDate: "asc" } }),
+    prisma.segmentEffort.findMany({ where, include: { segment: true } }),
+    prisma.dailyMetric.findMany({ where, orderBy: { date: "asc" } }),
+    prisma.fitnessMetric.findMany({ where, orderBy: { date: "asc" } }),
+    prisma.plannedWorkout.findMany({ where, orderBy: { date: "asc" } }),
+    prisma.gymSession.findMany({ where, orderBy: { date: "asc" } }),
+    prisma.meal.findMany({ where, orderBy: { date: "asc" } }),
+    prisma.safeFood.findMany({ where }),
+    prisma.checkIn.findMany({ where, orderBy: { date: "asc" } }),
+    prisma.race.findMany({ where, orderBy: { date: "asc" } }),
+    prisma.goal.findMany({ where }),
+    prisma.expense.findMany({ where, orderBy: { date: "asc" } }),
+    prisma.coachUsage.findMany({ where, orderBy: { date: "asc" } }),
+    prisma.intervalsAccount.findUnique({ where, select: { athleteId: true, lastSyncAt: true } }),
+    prisma.stravaAccount.findUnique({ where, select: { athleteId: true, lastSyncAt: true } }),
+    prisma.groupMember.findMany({
+      where,
+      select: { displayName: true, joinedAt: true, group: { select: { name: true, metric: true } } },
+    }),
+    prisma.cyclePeriod.findMany({ where, select: { startDate: true }, orderBy: { startDate: "asc" } }),
+  ]);
+
+  return {
+    exportedAt: new Date().toISOString(),
+    profile,
+    connections: { intervals, strava },
+    activities,
+    segmentEfforts,
+    dailyMetrics,
+    fitnessMetrics,
+    plannedWorkouts,
+    gymSessions,
+    meals,
+    savedFoods,
+    checkIns,
+    events,
+    goals,
+    expenses,
+    coachUsage,
+    groups,
+    cyclePeriods,
+  };
+}
