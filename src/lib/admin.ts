@@ -30,24 +30,24 @@ export async function loadAdminOverview() {
   ]);
   const now = new Date();
   const withStatus = users.map((u) => {
-    return {
-      ...u,
-      status: adminUserStatus(
-        {
-          connections: [u.intervalsAccount, u.stravaAccount]
-            .filter((c) => c !== null)
-            .map((c) => ({ lastSyncAt: c.lastSyncAt, connectedAt: c.createdAt })),
-          latestData: [
-            u.activities[0]?.startDate,
-            u.dailyMetrics[0]?.date,
-            u.checkIns[0]?.date,
-            u.meals[0]?.createdAt,
-            u.gymSessions[0]?.date,
-          ],
-        },
-        now
-      ),
-    };
+    const { active, syncStale } = adminUserStatus(
+      {
+        connections: [u.intervalsAccount, u.stravaAccount]
+          .filter((c) => c !== null)
+          .map((c) => ({ lastSyncAt: c.lastSyncAt, connectedAt: c.createdAt })),
+        latestData: [
+          u.activities[0]?.startDate,
+          u.dailyMetrics[0]?.date,
+          u.checkIns[0]?.date,
+          u.meals[0]?.createdAt,
+          u.gymSessions[0]?.date,
+        ],
+      },
+      now
+    );
+    // Only coarse status leaves this function: admins don't see when someone last trained or ate.
+    const { activities: _a, dailyMetrics: _d, checkIns: _c, meals: _m, gymSessions: _g, ...rest } = u;
+    return { ...rest, status: { active, syncStale } };
   });
   return { users: withStatus, invites };
 }

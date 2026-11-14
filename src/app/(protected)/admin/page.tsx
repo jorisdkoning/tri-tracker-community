@@ -121,8 +121,7 @@ export default async function AdminPage() {
                 <p className="text-xs text-foreground/55">
                   Joined {dateFmt(u.createdAt)} · {u.onboardedAt ? "set up" : "not set up yet"} ·{" "}
                   {[u.stravaAccount && "Strava", u.intervalsAccount && "Intervals.icu"].filter(Boolean).join(" + ") || "no apps"} ·{" "}
-                  {u._count.activities} workouts · last active{" "}
-                  {u.status.lastActive ? dateFmt(u.status.lastActive) : "never"}
+                  {u._count.activities} workouts · {u.status.active ? "active this week" : "not active lately"}
                 </p>
                 {u.status.syncStale && (
                   <p className="w-full text-xs text-red-600 dark:text-red-400">
