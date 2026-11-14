@@ -1,20 +1,25 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useRef } from "react";
 import { signUpAction } from "../actions";
 import { Field, FormError } from "../_components/FormMessage";
 import { MIN_PASSWORD_LENGTH } from "@/lib/signup-rules";
 
 export function SignupForm({ invite }: { invite?: string }) {
   const [state, action, pending] = useActionState(signUpAction, undefined);
-  const [timezone, setTimezone] = useState("");
-  useEffect(() => setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone), []);
+  const timezoneRef = useRef<HTMLInputElement>(null);
 
   return (
-    <form action={action} className="space-y-4">
+    <form
+      action={action}
+      onSubmit={() => {
+        if (timezoneRef.current) timezoneRef.current.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      }}
+      className="space-y-4"
+    >
       <FormError message={state?.error} />
       {invite && <input type="hidden" name="invite" value={invite} />}
-      <input type="hidden" name="timezone" value={timezone} />
+      <input ref={timezoneRef} type="hidden" name="timezone" defaultValue="" />
       <Field label="Your name" name="name" autoComplete="given-name" required maxLength={80} />
       <Field label="Email" name="email" type="email" autoComplete="email" required />
       <Field
