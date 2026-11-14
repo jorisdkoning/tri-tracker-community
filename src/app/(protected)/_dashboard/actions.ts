@@ -30,7 +30,7 @@ export async function saveCheckIn(feeling: number, note?: string) {
 const HIDE_GETTING_STARTED_COOKIE = "hide_getting_started";
 
 export async function hideGettingStarted() {
-  await requireUser();
-  (await cookies()).set(HIDE_GETTING_STARTED_COOKIE, "1", { maxAge: 60 * 60 * 24 * 365, path: "/", sameSite: "lax" });
+  const user = await requireUser();
+  (await cookies()).set(HIDE_GETTING_STARTED_COOKIE, user.id, { maxAge: 60 * 60 * 24 * 365, path: "/", sameSite: "lax" });
   revalidatePath("/");
 }

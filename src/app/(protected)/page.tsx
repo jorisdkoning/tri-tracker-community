@@ -15,7 +15,7 @@ import { FuelAndSpend } from "./_dashboard/FuelAndSpend";
 
 export default async function DashboardPage() {
   const user = await requireUser();
-  const hideChecklist = (await cookies()).get("hide_getting_started")?.value === "1";
+  const hideChecklist = (await cookies()).get("hide_getting_started")?.value === user.id;
   const [data, steps] = await Promise.all([
     loadDashboardData(user.id, user.timezone),
     hideChecklist ? null : loadGettingStarted(user.id),
