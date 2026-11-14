@@ -20,28 +20,28 @@ model User {
   createdAt     DateTime  @default(now())
 
   // Profile and preferences, set during onboarding and in Settings
-  timezone    String    @default("Europe/Amsterdam")
-  weightKg    Float?
-  currency    String    @default("EUR")
+  timezone          String             @default("Europe/Amsterdam")
+  weightKg          Float?
+  currency          String             @default("EUR")
   // Preset ids (see lib/food-restrictions) and the user's own words to avoid
-  foodRestrictions String[] @default([])
+  foodRestrictions  String[]           @default([])
   // The user's own Anthropic API key for the AI coach, encrypted (lib/crypto)
-  anthropicApiKey String?
+  anthropicApiKey   String?
   // Phone/browser reminders (only sent to devices in pushSubscriptions)
   remindCheckIn     Boolean            @default(true)
   remindWeekly      Boolean            @default(true)
   pushSubscriptions PushSubscription[]
-  onboardedAt DateTime?
+  onboardedAt       DateTime?
   // The first account on a deployment becomes admin automatically
-  isAdmin     Boolean   @default(false)
+  isAdmin           Boolean            @default(false)
   // Bumped on password change/reset; sign-ins carrying an older value are ended.
-  sessionVersion Int    @default(0)
+  sessionVersion    Int                @default(0)
 
   accounts       Account[]
   sessions       Session[]
   personalLinks  PersonalLink[]
   passwordResets PasswordReset[]
-  invitesCreated Invite[]       @relation("InviteCreator")
+  invitesCreated Invite[]        @relation("InviteCreator")
 
   intervalsAccount IntervalsAccount?
   stravaAccount    StravaAccount?
@@ -58,6 +58,8 @@ model User {
   goals            Goal[]
   coachUsages      CoachUsage[]
   checkIns         CheckIn[]
+  groupsCreated    Group[]           @relation("GroupCreator")
+  groupMemberships GroupMember[]
 }
 
 // --- Auth.js tables ---
@@ -495,5 +497,38 @@ model PushSubscription {
   auth      String
   createdAt DateTime @default(now())
 
+  @@index([userId])
+}
+
+// Groups and challenges: members see each other's display name and one total
+// for the group's challenge, nothing else.
+enum ChallengeMetric {
+  ACTIVE_MINUTES
+  WORKOUTS
+  DISTANCE
+  CHECKINS
+}
+
+model Group {
+  id          String          @id @default(cuid())
+  name        String
+  metric      ChallengeMetric @default(ACTIVE_MINUTES)
+  joinCode    String          @unique
+  createdById String?
+  createdBy   User?           @relation("GroupCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime        @default(now())
+
+  members GroupMember[]
+}
+
+model GroupMember {
+  groupId     String
+  group       Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName String
+  joinedAt    DateTime @default(now())
+
+  @@id([groupId, userId])
   @@index([userId])
 }

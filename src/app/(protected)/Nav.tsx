@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/budget", label: "Budget" },
   { href: "/races", label: "Events" },
   { href: "/goals", label: "Goals" },
+  { href: "/groups", label: "Groups" },
   { href: "/coach", label: "Coach" },
   { href: "/settings", label: "Settings" },
   { href: "/help", label: "Help" },

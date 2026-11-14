@@ -21,6 +21,7 @@ export async function exportUserData(userId: string) {
     coachUsage,
     intervals,
     strava,
+    groups,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
@@ -51,6 +52,10 @@ export async function exportUserData(userId: string) {
     prisma.coachUsage.findMany({ where, orderBy: { date: "asc" } }),
     prisma.intervalsAccount.findUnique({ where, select: { athleteId: true, lastSyncAt: true } }),
     prisma.stravaAccount.findUnique({ where, select: { athleteId: true, lastSyncAt: true } }),
+    prisma.groupMember.findMany({
+      where,
+      select: { displayName: true, joinedAt: true, group: { select: { name: true, metric: true } } },
+    }),
   ]);
 
   return {
@@ -70,5 +75,6 @@ export async function exportUserData(userId: string) {
     goals,
     expenses,
     coachUsage,
+    groups,
   };
 }
