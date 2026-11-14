@@ -27,6 +27,8 @@ model User {
   onboardedAt DateTime?
   // The first account on a deployment becomes admin automatically
   isAdmin     Boolean   @default(false)
+  // Bumped on password change/reset; sign-ins carrying an older value are ended.
+  sessionVersion Int    @default(0)
 
   accounts       Account[]
   sessions       Session[]
@@ -325,8 +327,11 @@ model GymSession {
   source      String         @default("apple_health")
   durationSec Int?
   calories    Int?
+  // Apple Health workout start, e.g. "apple:2026-11-14T07:00:00.000Z"; null for manual sessions
+  externalId  String?
   createdAt   DateTime       @default(now())
 
+  @@unique([userId, externalId])
   @@index([userId, date])
 }
 

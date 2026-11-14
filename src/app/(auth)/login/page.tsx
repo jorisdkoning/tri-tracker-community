@@ -8,6 +8,8 @@ const ERRORS: Record<string, string> = {
     "There is no account for that Google address yet, and this app only accepts new people with an invite link.",
   AccountGone: "Your account no longer exists. You can create a new one.",
   AccessDenied: "That Google account could not be used to sign in.",
+  OAuthAccountNotLinked:
+    "There is already an account with this email address. Sign in with your password instead. Forgot it? Ask the person who runs this app for a reset link.",
 };
 
 export default async function LoginPage({

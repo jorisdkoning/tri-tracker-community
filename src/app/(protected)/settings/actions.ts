@@ -144,15 +144,29 @@ export async function changePasswordAction(_prev: ProfileState, formData: FormDa
   if (user.passwordHash && !(await bcrypt.compare(current, user.passwordHash))) {
     return { error: "Your current password is not right" };
   }
-  await prisma.user.update({ where: { id: userId }, data: { passwordHash: await bcrypt.hash(next, 12) } });
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash: await bcrypt.hash(next, 12), sessionVersion: { increment: 1 } },
+  });
+  // Ends every sign-in, including on other devices; sign in again with the new password.
+  await signOut({ redirectTo: "/login?reset=1" });
   return { saved: true };
 }
 
 export async function deleteAccountAction(_prev: ProfileState, formData: FormData): Promise<ProfileState> {
   const userId = await requireUserId();
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { email: true } });
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { email: true, isAdmin: true } });
   if (String(formData.get("confirmEmail") ?? "").trim().toLowerCase() !== user.email) {
     return { error: "Type your email address exactly to confirm" };
+  }
+  if (user.isAdmin) {
+    const [otherAdmins, otherUsers] = await Promise.all([
+      prisma.user.count({ where: { isAdmin: true, NOT: { id: userId } } }),
+      prisma.user.count({ where: { NOT: { id: userId } } }),
+    ]);
+    if (otherAdmins === 0 && otherUsers > 0) {
+      return { error: "You're the only admin. Make someone else admin on the Admin page first." };
+    }
   }
   // Every table hangs off User with onDelete: Cascade, so this removes all data.
   await prisma.user.delete({ where: { id: userId } });

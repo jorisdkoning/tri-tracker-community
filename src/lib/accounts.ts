@@ -23,21 +23,26 @@ export async function checkCanSignUp(inviteCode: string | null | undefined) {
     prisma.user.count(),
     inviteCode ? prisma.invite.findUnique({ where: { code: inviteCode } }) : null,
   ]);
-  return signupDecision(mode, userCount, invite);
+  const decision = signupDecision(mode, userCount, invite);
+  return decision.ok ? { ok: true as const, inviteRequired: mode === "INVITE" && userCount > 0 } : decision;
 }
 
-// Runs for every newly created user (password or Google): the first account
-// becomes admin, and the invite it came with is marked used.
-export async function finishNewAccount(userId: string, email: string, inviteCode?: string | null) {
-  const otherAdmins = await prisma.user.count({ where: { isAdmin: true, NOT: { id: userId } } });
-  if (otherAdmins === 0) {
+// Atomically marks an invite used, so two people can't both join on one link.
+export async function claimInvite(code: string | null | undefined, email: string): Promise<boolean> {
+  if (!code) return false;
+  const claimed = await prisma.invite.updateMany({
+    where: { code, usedAt: null, expiresAt: { gt: new Date() } },
+    data: { usedAt: new Date(), usedByEmail: email },
+  });
+  return claimed.count === 1;
+}
+
+// Runs for every newly created user (password or Google): the very first
+// account on a deployment becomes admin.
+export async function finishNewAccount(userId: string) {
+  const otherUsers = await prisma.user.count({ where: { NOT: { id: userId } } });
+  if (otherUsers === 0) {
     await prisma.user.update({ where: { id: userId }, data: { isAdmin: true } });
-  }
-  if (inviteCode) {
-    await prisma.invite.updateMany({
-      where: { code: inviteCode, usedAt: null },
-      data: { usedAt: new Date(), usedByEmail: email },
-    });
   }
 }
 
@@ -55,6 +60,9 @@ export async function createPasswordAccount(input: {
   if (existing) {
     return { ok: false, reason: "There is already an account with this email. Try signing in instead." };
   }
+  if (decision.inviteRequired && !(await claimInvite(input.inviteCode, input.email))) {
+    return { ok: false, reason: "This invite link has already been used." };
+  }
 
   const user = await prisma.user.create({
     data: {
@@ -64,6 +72,6 @@ export async function createPasswordAccount(input: {
       timezone: input.timezone && isValidTimezone(input.timezone) ? input.timezone : DEFAULT_TIMEZONE,
     },
   });
-  await finishNewAccount(user.id, user.email, input.inviteCode);
+  await finishNewAccount(user.id);
   return { ok: true };
 }

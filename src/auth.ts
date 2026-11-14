@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
-import { checkCanSignUp, finishNewAccount } from "@/lib/accounts";
+import { checkCanSignUp, claimInvite, finishNewAccount } from "@/lib/accounts";
 
 // Set by the sign-up page before a Google sign-in, so a brand-new Google
 // account can be matched to the invite it was created from.
@@ -41,9 +41,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return { id: user.id, email: user.email, name: user.name };
       },
     }),
-    // Linking by email is safe because Google only reports verified addresses
-    // (checked in the signIn callback), so the Google user owns that inbox.
-    ...(googleEnabled ? [Google({ allowDangerousEmailAccountLinking: true })] : []),
+    // No automatic linking to an existing email/password account: that account
+    // may have been registered by someone else with this (unverified) address.
+    ...(googleEnabled ? [Google] : []),
   ],
   callbacks: {
     async signIn({ account, profile }) {
@@ -54,11 +54,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
       if (existing) return true;
 
-      const decision = await checkCanSignUp(await inviteFromCookie());
-      return decision.ok ? true : "/login?error=SignupNotAllowed";
+      const invite = await inviteFromCookie();
+      const decision = await checkCanSignUp(invite);
+      if (!decision.ok) return "/login?error=SignupNotAllowed";
+      if (decision.inviteRequired && !(await claimInvite(invite, email))) {
+        return "/login?error=SignupNotAllowed";
+      }
+      return true;
     },
-    jwt({ token, user }) {
-      if (user) token.id = user.id;
+    async jwt({ token, user }) {
+      const id = (user?.id ?? token.id) as string | undefined;
+      if (!id) return token;
+      const row = await prisma.user.findUnique({ where: { id }, select: { sessionVersion: true } });
+      if (!row) return null;
+      if (user) {
+        token.id = id;
+        token.sv = row.sessionVersion;
+      } else if (token.sv !== row.sessionVersion) {
+        return null;
+      }
       return token;
     },
     session({ session, token }) {
@@ -68,8 +82,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   events: {
     async createUser({ user }) {
-      if (user.id && user.email) {
-        await finishNewAccount(user.id, user.email, await inviteFromCookie());
+      if (user.id) {
+        await finishNewAccount(user.id);
       }
     },
   },

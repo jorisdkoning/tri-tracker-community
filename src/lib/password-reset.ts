@@ -33,7 +33,7 @@ export async function resetPasswordWithToken(token: string, password: string): P
   if (claimed.count !== 1) return false;
   await prisma.user.update({
     where: { id: row.userId },
-    data: { passwordHash: await bcrypt.hash(password, 12) },
+    data: { passwordHash: await bcrypt.hash(password, 12), sessionVersion: { increment: 1 } },
   });
   return true;
 }
