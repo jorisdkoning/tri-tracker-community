@@ -83,7 +83,7 @@ export default async function SettingsPage({
           title="Strava"
           subtitle="Brings in your runs, rides and swims with maps and segments."
           connected={Boolean(strava)}
-          badge={stravaConfigured ? undefined : "Not available"}
+          badge={stravaConfigured ? undefined : "Use Intervals.icu"}
         >
           {strava_error && (
             <p role="alert" className="text-sm text-red-600 dark:text-red-400">
@@ -106,10 +106,34 @@ export default async function SettingsPage({
               </p>
             </div>
           ) : (
-            <p className="text-sm text-foreground/65">
-              Strava isn&apos;t set up on this app yet. Use Intervals.icu instead — it can also read your Strava
-              workouts.
-            </p>
+            <div className="space-y-2 text-sm text-foreground/70">
+              <p>This app doesn&apos;t connect to Strava directly. Use Intervals.icu instead:</p>
+              <ol className="list-decimal space-y-1 pl-5">
+                <li>
+                  Make a free account at{" "}
+                  <a href="https://intervals.icu" target="_blank" rel="noreferrer" className="font-medium underline">
+                    intervals.icu
+                  </a>
+                  .
+                </li>
+                <li>
+                  In Intervals.icu, open{" "}
+                  <a
+                    href="https://intervals.icu/settings"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium underline"
+                  >
+                    Settings
+                  </a>{" "}
+                  and connect your watch or app (Garmin, Coros, Suunto, Wahoo, Polar…).
+                </li>
+                <li>Then connect Intervals.icu in the card below.</li>
+              </ol>
+              <p className="text-xs text-foreground/55">
+                Tip: connect your watch itself, not only Strava. Strava doesn&apos;t let other apps pass its workouts on.
+              </p>
+            </div>
           )}
         </ConnectionCard>
 
