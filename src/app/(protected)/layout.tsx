@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { signOut } from "@/auth";
 import { requireUser } from "@/lib/session";
 import { APP_NAME } from "@/lib/brand";
+import { LogoMark } from "@/components/LogoMark";
 import { Nav } from "./Nav";
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
@@ -14,9 +15,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
         <div className="mx-auto max-w-5xl space-y-2 px-4 pt-3 pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-xs font-bold text-white">
-                FL
-              </span>
+              <LogoMark size={28} />
               <span className="font-semibold tracking-tight">{APP_NAME}</span>
             </div>
             <div className="flex items-center gap-3">
