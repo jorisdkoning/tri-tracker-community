@@ -1,6 +1,7 @@
 import type { DistanceType, PlannedWorkout } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { DAY_MS, localDateString, startOfWeekUtc } from "@/lib/time";
+import { localToUtc } from "@/lib/ics";
+import { DAY_MS, localDateString, localWeekStartDate } from "@/lib/time";
 import { computeNutritionPlan, type NutritionPlan } from "@/lib/nutrition-plan";
 import { computeGoalProgress, type GoalProgress } from "@/lib/goals";
 import { checkInNudge, type CheckInEntry } from "@/lib/checkin";
@@ -34,7 +35,8 @@ export interface DashboardData {
 export async function loadDashboardData(userId: string, timeZone: string): Promise<DashboardData> {
   const now = new Date();
   const today = new Date(localDateString(timeZone));
-  const weekStart = startOfWeekUtc(now);
+  const weekStartDay = localWeekStartDate(timeZone, now);
+  const weekStart = localToUtc(weekStartDay, "00:00", timeZone);
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
   const [
@@ -73,7 +75,7 @@ export async function loadDashboardData(userId: string, timeZone: string): Promi
     prisma.goal.findMany({ where: { userId }, orderBy: { createdAt: "asc" }, take: 3 }),
     prisma.expense.aggregate({ where: { userId, date: { gte: monthStart } }, _sum: { amount: true } }),
     prisma.gymSession.findMany({
-      where: { userId, date: { gte: weekStart } },
+      where: { userId, date: { gte: new Date(weekStartDay) } },
       select: { durationSec: true },
     }),
     prisma.gymSession.findMany({

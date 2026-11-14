@@ -94,7 +94,7 @@ export default async function TrainingPage() {
     id: activity.id,
     sport: activity.sport,
     name: activity.name,
-    startDate: activity.startDate.toISOString().slice(0, 10),
+    startDate: localDateString(user.timezone, activity.startDate),
     movingTime: activity.movingTime,
     distance: activity.distance,
     elevationGain: activity.elevationGain,
@@ -143,7 +143,7 @@ export default async function TrainingPage() {
       id: a.id,
       sport: a.sport,
       name: a.name,
-      date: a.startDate.toISOString().slice(0, 10),
+      date: localDateString(user.timezone, a.startDate),
       points: decodePolyline(a.mapPolyline!),
     }))
     .filter((r) => r.points.length > 0);
@@ -157,7 +157,7 @@ export default async function TrainingPage() {
       distance: e.segment.distance,
       averageGrade: e.segment.averageGrade,
       movingTime: e.movingTime,
-      date: e.startDate.toISOString().slice(0, 10),
+      date: localDateString(user.timezone, e.startDate),
       activityName: e.activity.name,
       lat: e.segment.startLat!,
       lng: e.segment.startLng!,
