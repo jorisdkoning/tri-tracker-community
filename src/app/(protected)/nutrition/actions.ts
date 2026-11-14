@@ -38,12 +38,14 @@ export async function addMeal(formData: FormData) {
   let calories = parsed.calories ?? null;
   let proteinG = parsed.proteinG ?? null;
   let fodmapRisk: "LOW" | "MEDIUM" | "HIGH" = "LOW";
+  let safeFoodId: string | null = null;
 
   if (parsed.safeFoodId) {
     const food = await prisma.safeFood.findFirst({
       where: { id: parsed.safeFoodId, userId },
     });
     if (food) {
+      safeFoodId = food.id;
       description = description || food.name;
       calories = calories ?? food.calories;
       proteinG = proteinG ?? food.proteinG;
@@ -67,7 +69,7 @@ export async function addMeal(formData: FormData) {
       calories,
       proteinG,
       fodmapRisk,
-      safeFoodId: parsed.safeFoodId || null,
+      safeFoodId,
     },
   });
 
