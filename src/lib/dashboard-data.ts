@@ -82,7 +82,7 @@ export async function loadDashboardData(userId: string, timeZone: string): Promi
       take: 5,
       select: { id: true, date: true, notes: true, durationSec: true },
     }),
-    computeNutritionPlan(userId, localDateString(timeZone)),
+    computeNutritionPlan(userId, localDateString(timeZone), timeZone),
     prisma.plannedWorkout.findMany({
       where: { userId, date: { gte: today } },
       orderBy: [{ date: "asc" }, { startTime: "asc" }],

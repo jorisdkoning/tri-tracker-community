@@ -64,7 +64,7 @@ export default async function NutritionPage() {
       orderBy: { createdAt: "asc" },
     }),
     prisma.safeFood.findMany({ where: { userId }, orderBy: { name: "asc" } }),
-    computeNutritionPlan(userId, localDateString(user.timezone)),
+    computeNutritionPlan(userId, localDateString(user.timezone), user.timezone),
   ]);
 
   const { tier, targets } = plan;

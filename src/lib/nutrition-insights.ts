@@ -74,7 +74,7 @@ export async function computeNutritionInsights(
       where: { userId, date: { gte: start, lt: today } },
       orderBy: { date: "asc" },
     }),
-    Promise.all(dayKeys.map((day) => computeNutritionPlan(userId, day))),
+    Promise.all(dayKeys.map((day) => computeNutritionPlan(userId, day, timeZone))),
   ]);
 
   const days: InsightDay[] = dayKeys.map((date, index) => {

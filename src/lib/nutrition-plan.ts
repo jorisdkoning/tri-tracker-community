@@ -5,6 +5,7 @@ import {
 } from "@/lib/nutrition";
 
 import { DAY_MS } from "@/lib/time";
+import { localToUtc } from "@/lib/ics";
 const TIERS: TrainingLoadTier[] = ["rest", "light", "moderate", "heavy"];
 // Strength work burns less and needs less fuel per minute than endurance.
 const GYM_MINUTE_WEIGHT = 0.5;
@@ -24,10 +25,15 @@ function tierForMinutes(minutes: number): TrainingLoadTier {
   return "heavy";
 }
 
-async function trainingMinutes(userId: string, start: Date, end: Date) {
+// Activities carry a real start time, so their day is bounded by local
+// midnights; gym sessions are stored as plain calendar dates.
+async function trainingMinutes(userId: string, start: Date, end: Date, timeZone: string) {
+  const isoDay = (d: Date) => d.toISOString().slice(0, 10);
+  const localStart = localToUtc(isoDay(start), "00:00", timeZone);
+  const localEnd = localToUtc(isoDay(end), "00:00", timeZone);
   const [activities, gym] = await Promise.all([
     prisma.activity.findMany({
-      where: { userId, startDate: { gte: start, lt: end } },
+      where: { userId, startDate: { gte: localStart, lt: localEnd } },
       select: { movingTime: true },
     }),
     prisma.gymSession.findMany({
@@ -43,7 +49,8 @@ async function trainingMinutes(userId: string, start: Date, end: Date) {
 // `day` is a YYYY-MM-DD string in the user's local timezone.
 export async function computeNutritionPlan(
   userId: string,
-  day: string
+  day: string,
+  timeZone: string
 ): Promise<NutritionPlan> {
   const start = new Date(day);
   const end = new Date(start.getTime() + DAY_MS);
@@ -51,8 +58,8 @@ export async function computeNutritionPlan(
   const raceWindowEnd = new Date(start.getTime() + 3 * DAY_MS);
 
   const [today, prior, latestWeight, profile, nextRace, plannedAhead] = await Promise.all([
-    trainingMinutes(userId, start, end),
-    trainingMinutes(userId, yesterday, start),
+    trainingMinutes(userId, start, end, timeZone),
+    trainingMinutes(userId, yesterday, start, timeZone),
     prisma.dailyMetric.findFirst({
       where: { userId, weightKg: { not: null } },
       orderBy: { date: "desc" },

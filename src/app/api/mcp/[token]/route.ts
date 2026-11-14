@@ -60,8 +60,8 @@ function dayLines(
   return { kcal, protein, lines };
 }
 
-async function targetLine(userId: string, day: string, kcal: number, protein: number) {
-  const plan = await computeNutritionPlan(userId, day);
+async function targetLine(userId: string, timeZone: string, day: string, kcal: number, protein: number) {
+  const plan = await computeNutritionPlan(userId, day, timeZone);
   const { calories, proteinG, carbsG } = plan.targets;
   return [
     `Target for a ${plan.tier} day: ${calories} kcal, ${proteinG} g protein, ${carbsG} g carbs. Remaining: ${Math.max(0, calories - kcal)} kcal, ${Math.max(0, proteinG - protein)} g protein.`,
@@ -110,7 +110,7 @@ function buildServer(userId: string, timeZone: string, showFodmap: boolean) {
             ? `Heads up: contains possible high-FODMAP ingredient(s): ${check.matched.join(", ")}.`
             : null,
           `Total for ${day}: ${totals.kcal} kcal, ${totals.protein} g protein across ${meals.length} entries.`,
-          await targetLine(userId, day, totals.kcal, totals.protein),
+          await targetLine(userId, timeZone, day, totals.kcal, totals.protein),
         ]
           .filter(Boolean)
           .join("\n")
@@ -133,7 +133,7 @@ function buildServer(userId: string, timeZone: string, showFodmap: boolean) {
       if (meals.length === 0) return text(`Nothing logged for ${day}.`);
       const totals = dayLines(showFodmap, meals);
       return text(
-        `${day}: ${totals.kcal} kcal, ${totals.protein} g protein\n${totals.lines.join("\n")}\n${await targetLine(userId, day, totals.kcal, totals.protein)}`
+        `${day}: ${totals.kcal} kcal, ${totals.protein} g protein\n${totals.lines.join("\n")}\n${await targetLine(userId, timeZone, day, totals.kcal, totals.protein)}`
       );
     }
   );
