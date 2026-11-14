@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { auth } from "@/auth";
+import { requireUser } from "@/lib/session";
 import { computeNutritionInsights, type Insight } from "@/lib/nutrition-insights";
 import { NutritionCharts } from "./NutritionCharts";
 
@@ -11,9 +11,8 @@ const SEVERITY_STYLE: Record<Insight["severity"], { dot: string; label: string }
 };
 
 export default async function NutritionInsightsPage() {
-  const session = await auth();
-  const userId = session!.user!.id!;
-  const data = await computeNutritionInsights(userId, 14);
+  const user = await requireUser();
+  const data = await computeNutritionInsights(user.id, user.timezone, 14, user.showFodmap);
 
   const pct = (value: number | null, target: number | null) =>
     value != null && target ? Math.round((value / target) * 100) : null;

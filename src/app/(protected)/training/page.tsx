@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { Sport } from "@prisma/client";
-import { auth } from "@/auth";
+import { requireUser } from "@/lib/session";
+import { localDateString } from "@/lib/time";
+import { LogWorkoutForm } from "../_log/LogForms";
 import { prisma } from "@/lib/prisma";
 import { FitnessChart, type FitnessPoint } from "./FitnessChart";
 import { ActivityTable, type ActivityRow } from "./ActivityTable";
@@ -44,8 +46,9 @@ const ACTIVITY_SELECT = {
 } as const;
 
 export default async function TrainingPage() {
-  const session = await auth();
-  const userId = session!.user!.id!;
+  const user = await requireUser();
+  const userId = user.id;
+  const today = localDateString(user.timezone);
 
   const since = daysAgo(BREAKDOWN_WINDOW_DAYS);
 
@@ -160,17 +163,21 @@ export default async function TrainingPage() {
       lng: e.segment.startLng!,
     }));
 
-  if (!account) {
+  if (!account && activities.length === 0) {
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-semibold">Training</h1>
-        <p className="text-foreground/70">
-          Connect intervals.icu in{" "}
-          <Link href="/settings" className="underline">
-            Settings
-          </Link>{" "}
-          to see your activities and fitness trend here.
-        </p>
+        <div className="card space-y-2 p-5">
+          <p className="font-medium">No workouts yet</p>
+          <p className="text-sm text-foreground/70">
+            Connect Strava or Intervals.icu in{" "}
+            <Link href="/settings" className="text-accent underline">
+              Settings
+            </Link>{" "}
+            and your workouts appear here automatically. Or add one by hand below.
+          </p>
+        </div>
+        <LogWorkoutForm today={today} />
       </div>
     );
   }
@@ -178,6 +185,7 @@ export default async function TrainingPage() {
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-semibold">Training</h1>
+      <LogWorkoutForm today={today} />
 
       <section className="space-y-3">
         <h2 className="text-lg font-medium">Overall fitness</h2>

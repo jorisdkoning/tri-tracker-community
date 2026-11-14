@@ -1,11 +1,13 @@
+import { redirect } from "next/navigation";
 import { signOut } from "@/auth";
+import { requireUser } from "@/lib/session";
+import { APP_NAME } from "@/lib/brand";
 import { Nav } from "./Nav";
 
-export default function ProtectedLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
+  const user = await requireUser();
+  if (!user.onboardedAt) redirect("/welcome");
+
   return (
     <div className="flex flex-1 flex-col">
       <header className="sticky top-0 z-20 border-b border-line bg-background/80 backdrop-blur">
@@ -15,23 +17,23 @@ export default function ProtectedLayout({
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-xs font-bold text-white">
                 TT
               </span>
-              <span className="font-semibold tracking-tight">Tri Tracker</span>
+              <span className="font-semibold tracking-tight">{APP_NAME}</span>
             </div>
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/login" });
-              }}
-            >
-              <button
-                type="submit"
-                className="text-sm text-foreground/60 hover:text-foreground"
+            <div className="flex items-center gap-3">
+              <span className="hidden text-sm text-foreground/55 sm:inline">{user.name ?? user.email}</span>
+              <form
+                action={async () => {
+                  "use server";
+                  await signOut({ redirectTo: "/login" });
+                }}
               >
-                Sign out
-              </button>
-            </form>
+                <button type="submit" className="text-sm text-foreground/60 hover:text-foreground">
+                  Sign out
+                </button>
+              </form>
+            </div>
           </div>
-          <Nav />
+          <Nav isAdmin={user.isAdmin} />
         </div>
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">{children}</main>

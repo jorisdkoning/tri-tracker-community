@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { MealType } from "@prisma/client";
-import { auth } from "@/auth";
+import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { effectiveFodmapRisk } from "@/lib/nutrition";
 import { computeNutritionPlan } from "@/lib/nutrition-plan";
@@ -16,8 +16,8 @@ const MEAL_TYPE_LABELS: Record<MealType, string> = {
   SNACK: "Snack",
 };
 
-function todayRange() {
-  const start = new Date(localDateString());
+function todayRange(timeZone: string) {
+  const start = new Date(localDateString(timeZone));
   const end = new Date(start);
   end.setUTCDate(end.getUTCDate() + 1);
   return { start, end };
@@ -54,9 +54,9 @@ function ProgressBar({
 }
 
 export default async function NutritionPage() {
-  const session = await auth();
-  const userId = session!.user!.id!;
-  const { start, end } = todayRange();
+  const user = await requireUser();
+  const userId = user.id;
+  const { start, end } = todayRange(user.timezone);
 
   const [meals, safeFoods, plan] = await Promise.all([
     prisma.meal.findMany({
@@ -64,7 +64,7 @@ export default async function NutritionPage() {
       orderBy: { createdAt: "asc" },
     }),
     prisma.safeFood.findMany({ where: { userId }, orderBy: { name: "asc" } }),
-    computeNutritionPlan(userId, localDateString()),
+    computeNutritionPlan(userId, localDateString(user.timezone)),
   ]);
 
   const { tier, targets } = plan;
@@ -88,8 +88,8 @@ export default async function NutritionPage() {
         </Link>
       </div>
       <p className="text-sm text-foreground/70">
-        No lactose, no wheat/gluten, no onion — low-FODMAP as a guide. Today
-        looks like a <strong>{tier}</strong> day.
+        {user.showFodmap && "Low-FODMAP as a guide: meals with common trigger foods get a warning. "}
+        Today looks like a <strong>{tier}</strong> day.
       </p>
       <ul className="list-disc space-y-1 pl-5 text-sm text-foreground/70">
         {plan.reasons.map((reason) => (
@@ -220,7 +220,7 @@ export default async function NutritionPage() {
                         {meal.description}
                         {meal.calories != null && ` · ${meal.calories}kcal`}
                         {meal.proteinG != null && ` · ${meal.proteinG}g protein`}
-                        {effectiveFodmapRisk(meal) === "HIGH" && (
+                        {user.showFodmap && effectiveFodmapRisk(meal) === "HIGH" && (
                           <span className="ml-2 text-amber-600 dark:text-amber-400">
                             ⚠ high-FODMAP
                           </span>
@@ -245,7 +245,7 @@ export default async function NutritionPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-medium">Safe foods</h2>
+        <h2 className="text-lg font-medium">Saved foods</h2>
         <form
           action={addSafeFood}
           className="flex flex-wrap items-end gap-3 card p-4"

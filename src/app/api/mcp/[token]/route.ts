@@ -40,6 +40,7 @@ function text(message: string) {
 }
 
 function dayLines(
+  showFodmap: boolean,
   meals: {
     id: string;
     mealType: string;
@@ -54,7 +55,7 @@ function dayLines(
   const protein = meals.reduce((sum, m) => sum + (m.proteinG ?? 0), 0);
   const lines = meals.map(
     (m) =>
-      `- [${m.id}] ${m.mealType.toLowerCase()}: ${m.description} (${m.calories ?? "?"} kcal, ${m.proteinG ?? "?"} g protein${effectiveFodmapRisk(m) === "HIGH" ? ", HIGH FODMAP" : ""})`
+      `- [${m.id}] ${m.mealType.toLowerCase()}: ${m.description} (${m.calories ?? "?"} kcal, ${m.proteinG ?? "?"} g protein${showFodmap && effectiveFodmapRisk(m) === "HIGH" ? ", HIGH FODMAP" : ""})`
   );
   return { kcal, protein, lines };
 }
@@ -68,14 +69,14 @@ async function targetLine(userId: string, day: string, kcal: number, protein: nu
   ].join("\n");
 }
 
-function buildServer(userId: string, timeZone: string) {
+function buildServer(userId: string, timeZone: string, showFodmap: boolean) {
   const server = new McpServer({ name: "tri-tracker", version: "1.0.0" });
 
   server.registerTool(
     "log_meal",
     {
       description:
-        "Log food the user ate to their nutrition dashboard. If the user did not give calories or protein, estimate both yourself from the description with realistic portions (ask a brief question only if the portion is truly unclear). The app flags high-FODMAP ingredients such as onion, garlic, wheat, lactose, apple, pear and cashew.",
+        "Log food the user ate to their nutrition dashboard. If the user did not give calories or protein, estimate both yourself from the description with realistic portions (ask a brief question only if the portion is truly unclear).",
       inputSchema: {
         description: z.string().min(1).max(200).describe("What was eaten, e.g. '2 eggs on toast with jam'"),
         calories: z.number().int().positive().max(10000).optional().describe("Estimated total kcal"),
@@ -101,11 +102,11 @@ function buildServer(userId: string, timeZone: string) {
       });
 
       const meals = await prisma.meal.findMany({ where: { userId, date: new Date(day) } });
-      const totals = dayLines(meals);
+      const totals = dayLines(showFodmap, meals);
       return text(
         [
           `Logged (${meal.id}): ${description}${calories ? `, ${calories} kcal` : ""}${protein_g != null ? `, ${protein_g} g protein` : ""}.`,
-          check.risk === "high"
+          showFodmap && check.risk === "high"
             ? `Heads up: contains possible high-FODMAP ingredient(s): ${check.matched.join(", ")}.`
             : null,
           `Total for ${day}: ${totals.kcal} kcal, ${totals.protein} g protein across ${meals.length} entries.`,
@@ -130,7 +131,7 @@ function buildServer(userId: string, timeZone: string) {
         orderBy: { createdAt: "asc" },
       });
       if (meals.length === 0) return text(`Nothing logged for ${day}.`);
-      const totals = dayLines(meals);
+      const totals = dayLines(showFodmap, meals);
       return text(
         `${day}: ${totals.kcal} kcal, ${totals.protein} g protein\n${totals.lines.join("\n")}\n${await targetLine(userId, day, totals.kcal, totals.protein)}`
       );
@@ -187,7 +188,7 @@ async function handle(
     return new Response("Not found", { status: 404 });
   }
 
-  const server = buildServer(user.id, user.timezone);
+  const server = buildServer(user.id, user.timezone, user.showFodmap);
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,

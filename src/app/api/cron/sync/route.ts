@@ -2,30 +2,31 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { runIntervalsSync, runStravaSync } from "@/lib/sync";
-
+import { orderForSync } from "@/lib/cron-order";
 import { safeEqual } from "@/lib/secrets";
+
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-// Daily incremental sync: only the last couple of weeks, since the manual
-// button in Settings already covers the full year.
+// Daily incremental sync for every connected user: only the last couple of
+// weeks, since the button in Settings already covers the full year.
 const CRON_WINDOW_DAYS = 14;
+// Stop starting new users after this, so the run ends before maxDuration.
+const TIME_BUDGET_MS = 45_000;
 
 function authorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
   if (!secret || secret.length < 16) return false;
-  const provided = request.headers.get("authorization") ?? "";
-  const expected = `Bearer ${secret}`;
-  return safeEqual(provided, expected);
+  return safeEqual(request.headers.get("authorization") ?? "", `Bearer ${secret}`);
 }
 
-async function attempt<T>(job: () => Promise<T>) {
+async function attempt(job: () => Promise<unknown>): Promise<boolean> {
   try {
-    return { ok: true as const, ...(await job()) };
+    await job();
+    return true;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "failed";
-    console.error("[cron] sync failed:", message);
-    return { ok: false as const, error: message };
+    console.error("[cron] sync failed:", error instanceof Error ? error.message : error);
+    return false;
   }
 }
 
@@ -34,16 +35,38 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await prisma.user.findFirst({ select: { id: true } });
-  if (!user) return NextResponse.json({ error: "No user" }, { status: 409 });
+  const started = Date.now();
+  const rows = await prisma.user.findMany({
+    where: { OR: [{ intervalsAccount: { isNot: null } }, { stravaAccount: { isNot: null } }] },
+    select: {
+      id: true,
+      intervalsAccount: { select: { lastSyncAt: true } },
+      stravaAccount: { select: { lastSyncAt: true } },
+    },
+  });
+  const users = orderForSync(
+    rows.map((r) => ({
+      id: r.id,
+      intervalsLastSync: r.intervalsAccount ? r.intervalsAccount.lastSyncAt : undefined,
+      stravaLastSync: r.stravaAccount ? r.stravaAccount.lastSyncAt : undefined,
+    }))
+  );
 
-  const [strava, intervals] = await Promise.all([
-    attempt(() => runStravaSync(user.id, CRON_WINDOW_DAYS)),
-    attempt(() => runIntervalsSync(user.id, CRON_WINDOW_DAYS)),
-  ]);
+  let synced = 0;
+  let failures = 0;
+  for (const user of users) {
+    if (Date.now() - started > TIME_BUDGET_MS) break;
+    const jobs = [];
+    if (user.stravaLastSync !== undefined) jobs.push(attempt(() => runStravaSync(user.id, CRON_WINDOW_DAYS)));
+    if (user.intervalsLastSync !== undefined) jobs.push(attempt(() => runIntervalsSync(user.id, CRON_WINDOW_DAYS)));
+    const results = await Promise.all(jobs);
+    failures += results.filter((ok) => !ok).length;
+    synced++;
+  }
 
   for (const path of ["/", "/training", "/health", "/settings"]) revalidatePath(path);
 
-  console.log("[cron] sync done", JSON.stringify({ strava, intervals }));
-  return NextResponse.json({ strava, intervals });
+  const summary = { users: users.length, synced, failures };
+  console.log("[cron] sync done", JSON.stringify(summary));
+  return NextResponse.json(summary);
 }

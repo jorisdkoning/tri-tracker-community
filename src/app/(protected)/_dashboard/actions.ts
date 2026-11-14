@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireUserId } from "@/lib/session";
+import { requireUser } from "@/lib/session";
 import { localDateString } from "@/lib/time";
 
 const schema = z.object({
@@ -13,9 +13,9 @@ const schema = z.object({
 
 // One check-in per day: answering again today replaces the earlier answer.
 export async function saveCheckIn(feeling: number, note?: string) {
-  const userId = await requireUserId();
+  const { id: userId, timezone } = await requireUser();
   const parsed = schema.parse({ feeling, note });
-  const date = new Date(localDateString());
+  const date = new Date(localDateString(timezone));
 
   await prisma.checkIn.upsert({
     where: { userId_date: { userId, date } },

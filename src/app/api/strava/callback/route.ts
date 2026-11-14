@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -63,6 +64,11 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return clearStateCookie(
+        NextResponse.redirect(new URL("/settings?strava_error=taken", request.nextUrl))
+      );
+    }
     console.error("Strava token exchange failed", err);
     return clearStateCookie(
       NextResponse.redirect(

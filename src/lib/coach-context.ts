@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { computeNutritionInsights, nutritionInsightsText } from "@/lib/nutrition-insights";
 
 import { formatDuration } from "@/lib/format";
+import { formatMoney } from "@/lib/profile";
+import { DEFAULT_TIMEZONE } from "@/lib/time";
 function avg(values: number[]): number | null {
   if (values.length === 0) return null;
   return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
@@ -17,6 +19,11 @@ function daysUntil(date: Date) {
 // Kept as readable prose/tables rather than raw JSON so the model doesn't have
 // to do its own parsing of the data shape.
 export async function buildCoachContext(userId: string): Promise<string> {
+  const profile = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { timezone: true, currency: true, weightKg: true, showFodmap: true },
+  });
+  const timeZone = profile?.timezone ?? DEFAULT_TIMEZONE;
   const now = new Date();
   const since90 = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
   const since30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -183,14 +190,14 @@ export async function buildCoachContext(userId: string): Promise<string> {
   lines.push("");
   lines.push("## Nutrition (last 14 completed days, against targets that follow training)");
   try {
-    lines.push(...nutritionInsightsText(await computeNutritionInsights(userId, 14)));
+    lines.push(...nutritionInsightsText(await computeNutritionInsights(userId, timeZone, 14, profile?.showFodmap ?? false)));
   } catch {
     lines.push("Nutrition summary unavailable.");
   }
 
   lines.push("");
   lines.push("## Budget");
-  lines.push(`Spent this month: €${(monthExpenses._sum.amount ?? 0).toFixed(2)}.`);
+  lines.push(`Spent this month: ${formatMoney(monthExpenses._sum.amount ?? 0, profile?.currency ?? "EUR")}.`);
 
   return lines.join("\n");
 }

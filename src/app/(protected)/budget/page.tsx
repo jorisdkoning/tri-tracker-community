@@ -1,5 +1,6 @@
 import type { ExpenseCategory } from "@prisma/client";
-import { auth } from "@/auth";
+import { requireUser } from "@/lib/session";
+import { formatMoney } from "@/lib/profile";
 import { prisma } from "@/lib/prisma";
 import { addExpense, deleteExpense } from "./actions";
 
@@ -12,16 +13,11 @@ const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   OTHER: "Other",
 };
 
-function formatEur(amount: number) {
-  return new Intl.NumberFormat("nl-NL", {
-    style: "currency",
-    currency: "EUR",
-  }).format(amount);
-}
 
 export default async function BudgetPage() {
-  const session = await auth();
-  const userId = session!.user!.id!;
+  const user = await requireUser();
+  const userId = user.id;
+  const formatEur = (amount: number) => formatMoney(amount, user.currency);
 
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));

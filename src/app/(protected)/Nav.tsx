@@ -16,12 +16,13 @@ const NAV_ITEMS = [
   { href: "/settings", label: "Settings" },
 ];
 
-export function Nav() {
+export function Nav({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
+  const items = isAdmin ? [...NAV_ITEMS, { href: "/admin", label: "Admin" }] : NAV_ITEMS;
 
   return (
     <nav className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-0.5 text-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {NAV_ITEMS.map((item) => {
+      {items.map((item) => {
         const active =
           item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
         return (

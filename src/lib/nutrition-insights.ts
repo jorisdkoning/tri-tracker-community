@@ -59,7 +59,8 @@ const round = (n: number) => Math.round(n);
 export async function computeNutritionInsights(
   userId: string,
   timeZone: string,
-  windowDays = 14
+  windowDays = 14,
+  showFodmap = false
 ): Promise<NutritionInsights> {
   const today = new Date(localDateString(timeZone));
   const start = new Date(today.getTime() - windowDays * DAY_MS);
@@ -121,7 +122,7 @@ export async function computeNutritionInsights(
       detail:
         "With this many gaps the averages below are rough, and low days may just be days you did not log.",
       action:
-        "Log it right after you eat: send Claude a photo or a line like \"2 eggs on toast\" in your Food log chat. Aim for 5 of 7 days first.",
+        "Log it right after you eat: send Claude a photo or a line like \"2 eggs on toast\" in Claude, or add it on the Nutrition page. Aim for 5 of 7 days first.",
     });
   } else {
     insights.push({
@@ -225,14 +226,16 @@ export async function computeNutritionInsights(
   }
 
   // 6. FODMAP
-  const fodmapMeals = meals.filter((m) => effectiveFodmapRisk(m) === "HIGH");
-  if (fodmapMeals.length > 0) {
+  const fodmapMeals = showFodmap ? meals.filter((m) => effectiveFodmapRisk(m) === "HIGH") : [];
+  if (!showFodmap) {
+    // The athlete does not follow a low-FODMAP diet.
+  } else if (fodmapMeals.length > 0) {
     const names = [...new Set(fodmapMeals.map((m) => m.description))].slice(0, 3).join("; ");
     insights.push({
       severity: "medium",
       title: `${fodmapMeals.length} meal${fodmapMeals.length === 1 ? "" : "s"} flagged as high FODMAP`,
       detail: `For example: ${names}.`,
-      action: "Swap the flagged ingredient (onion, garlic, wheat, lactose, apple, pear, cashew) for a safe alternative from your saved foods.",
+      action: "Swap the flagged ingredient (onion, garlic, wheat, lactose, apple, pear, cashew) for an alternative from your saved foods.",
     });
   } else if (logged.length > 0) {
     insights.push({

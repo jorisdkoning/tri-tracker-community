@@ -1,5 +1,7 @@
 import type { GymSessionType } from "@prisma/client";
-import { auth } from "@/auth";
+import { requireUser } from "@/lib/session";
+import { localDateString } from "@/lib/time";
+import { LogWorkoutForm } from "../_log/LogForms";
 import { prisma } from "@/lib/prisma";
 import { deleteGymSession } from "./actions";
 import { NotesForm } from "./NotesForm";
@@ -13,8 +15,8 @@ const SESSION_TYPE_LABELS: Record<GymSessionType, string> = {
 };
 
 export default async function GymPage() {
-  const session = await auth();
-  const userId = session!.user!.id!;
+  const user = await requireUser();
+  const userId = user.id;
 
   const sessions = await prisma.gymSession.findMany({
     where: { userId },
@@ -26,18 +28,13 @@ export default async function GymPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Gym</h1>
       <p className="text-sm text-foreground/70">
-        Exercise/set/rep detail lives in RepCount — Apple Health only carries
-        a generic &quot;strength training&quot; label, not what you actually
-        did. Sessions sync in automatically with date/duration/calories; tag
-        each one yourself (e.g. &quot;Push day&quot;) if you want that visible
-        here too.
+        Strength sessions from Apple Health come in by themselves (with the Apple Health link in Settings).
+        You can also add them by hand, and give each one a name like &quot;Leg day&quot;.
       </p>
+      <LogWorkoutForm today={localDateString(user.timezone)} defaultKind="GYM" />
 
       {sessions.length === 0 ? (
-        <p className="text-sm text-foreground/70">
-          No gym sessions synced yet. Make sure RepCount&apos;s Apple Health
-          sync is on and Health Auto Export is pointed at this app.
-        </p>
+        <p className="text-sm text-foreground/70">No gym sessions yet.</p>
       ) : (
         <ul className="space-y-2">
           {sessions.map((gymSession) => (

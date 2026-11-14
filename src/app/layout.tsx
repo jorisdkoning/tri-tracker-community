@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { APP_NAME } from "@/lib/brand";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tri Tracker",
-  description: "Training, health, and budget tracking for triathlon",
-  appleWebApp: { capable: true, title: "Tri Tracker", statusBarStyle: "default" },
+  title: APP_NAME,
+  description: "Training, health, nutrition and race tracking for triathletes",
+  appleWebApp: { capable: true, title: APP_NAME, statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

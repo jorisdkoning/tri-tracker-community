@@ -1,13 +1,15 @@
-import { auth } from "@/auth";
+import Link from "next/link";
+import { requireUser } from "@/lib/session";
+import { LogBodyForm } from "../_log/LogForms";
 import { prisma } from "@/lib/prisma";
 import { MetricChart, type MetricPoint } from "./MetricChart";
 
-import { daysAgo } from "@/lib/time";
+import { daysAgo, localDateString } from "@/lib/time";
 const WINDOW_DAYS = 90;
 
 export default async function HealthPage() {
-  const session = await auth();
-  const userId = session!.user!.id!;
+  const user = await requireUser();
+  const userId = user.id;
 
   const since = daysAgo(WINDOW_DAYS);
   const metrics = await prisma.dailyMetric.findMany({
@@ -33,14 +35,15 @@ export default async function HealthPage() {
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-semibold">Health</h1>
+      <LogBodyForm today={localDateString(user.timezone)} />
 
       {!hasAnyData ? (
         <p className="text-foreground/70">
-          No health data yet. It arrives two ways: syncing intervals.icu in
-          Settings (if your wellness data lives there), or pointing the Health
-          Auto Export iOS app at this app&apos;s{" "}
-          <span className="font-mono text-sm">/api/ingest/health</span>{" "}
-          endpoint once deployed.
+          No health data yet. Connect Intervals.icu or Apple Health in{" "}
+          <Link href="/settings" className="text-accent underline">
+            Settings
+          </Link>{" "}
+          and it comes in by itself, or add numbers by hand above.
         </p>
       ) : (
         <div className="grid gap-8 lg:grid-cols-2">

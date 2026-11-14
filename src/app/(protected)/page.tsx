@@ -1,4 +1,4 @@
-import { requireUserId } from "@/lib/session";
+import { requireUser } from "@/lib/session";
 import { loadDashboardData } from "@/lib/dashboard-data";
 import { CheckInCard } from "./_dashboard/CheckInCard";
 import { SetupBanner } from "./_dashboard/SetupBanner";
@@ -12,7 +12,8 @@ import { GoalsCard } from "./_dashboard/GoalsCard";
 import { FuelAndSpend } from "./_dashboard/FuelAndSpend";
 
 export default async function DashboardPage() {
-  const data = await loadDashboardData(await requireUserId());
+  const user = await requireUser();
+  const data = await loadDashboardData(user.id, user.timezone);
 
   return (
     <div className="space-y-6">
