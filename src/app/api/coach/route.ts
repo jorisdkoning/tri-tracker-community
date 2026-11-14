@@ -1,6 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { auth } from "@/auth";
 import { buildCoachContext } from "@/lib/coach-context";
+import { coachErrorMessage, getCoachKey } from "@/lib/coach-key";
+import { COACH_INSTRUCTIONS } from "@/lib/coach-prompt";
 import {
   costMicros,
   dailyBudgetCents,
@@ -10,9 +12,6 @@ import {
 
 export const runtime = "nodejs";
 
-const SYSTEM_PROMPT = `You are a knowledgeable fitness, endurance and health coach and sports-science assistant for this one athlete. Answer using the real training, health, race, and budget data provided below — cite specific numbers from it rather than speaking generically.
-
-Be direct and concise: a few short paragraphs, bullet points for concrete recommendations. If the question touches on an injury, pain, or a medical symptom, give practical general guidance but clearly recommend seeing a doctor or physio for anything that sounds serious — you are not a medical professional.`;
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -20,12 +19,6 @@ export async function POST(request: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return new Response("Coach is not configured (missing ANTHROPIC_API_KEY)", {
-      status: 503,
-    });
-  }
 
   const body = await request.json().catch(() => null);
   const question = typeof body?.question === "string" ? body.question.trim() : "";
@@ -34,7 +27,11 @@ export async function POST(request: Request) {
   }
 
   const userId = session.user.id;
-  if (await isOverDailyBudget(userId)) {
+  const coachKey = await getCoachKey(userId);
+  if (!coachKey) {
+    return new Response("Add your Claude key in Settings to use the coach.", { status: 400 });
+  }
+  if (!coachKey.ownKey && (await isOverDailyBudget(userId))) {
     return new Response(
       `Daily Coach limit reached (${dailyBudgetCents()} cents). Try again tomorrow.`,
       { status: 429 }
@@ -42,13 +39,13 @@ export async function POST(request: Request) {
   }
 
   const context = await buildCoachContext(userId);
-  const client = new Anthropic({ apiKey });
+  const client = new Anthropic({ apiKey: coachKey.apiKey });
 
   const claudeStream = client.messages.stream({
     model: "claude-haiku-5-5",
     max_tokens: 4096,
     thinking: { type: "adaptive" },
-    system: `${SYSTEM_PROMPT}\n\n# Athlete data\n\n${context}`,
+    system: `${COACH_INSTRUCTIONS}\n\n# Athlete data\n\n${context}`,
     messages: [{ role: "user", content: question }],
   });
 
@@ -58,11 +55,15 @@ export async function POST(request: Request) {
       claudeStream.on("text", (delta) => {
         controller.enqueue(encoder.encode(delta));
       });
+      let failed = false;
       claudeStream.on("error", (err) => {
         console.error("Coach stream error", err);
-        controller.error(err);
+        failed = true;
+        controller.enqueue(encoder.encode(`\n\n${coachErrorMessage(err)}`));
+        controller.close();
       });
       claudeStream.on("end", async () => {
+        if (failed) return;
         try {
           const final = await claudeStream.finalMessage();
           await recordCoachUsage(

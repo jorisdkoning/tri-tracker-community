@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { encrypt } from "@/lib/crypto";
 import { IntervalsApiError, fetchAthleteProfile } from "@/lib/intervals";
 import bcrypt from "bcryptjs";
+import Anthropic, { AuthenticationError, PermissionDeniedError } from "@anthropic-ai/sdk";
 import { signOut } from "@/auth";
 import { runIntervalsSync, runStravaSync } from "@/lib/sync";
 import { requireUserId } from "@/lib/session";
@@ -171,4 +172,36 @@ export async function deleteAccountAction(_prev: ProfileState, formData: FormDat
   // Every table hangs off User with onDelete: Cascade, so this removes all data.
   await prisma.user.delete({ where: { id: userId } });
   await signOut({ redirectTo: "/login?error=AccountGone" });
+}
+
+// --- AI coach: the user's own Claude (Anthropic) key ---
+
+export async function connectClaudeKeyAction(_prev: ProfileState, formData: FormData): Promise<ProfileState> {
+  const userId = await requireUserId();
+  const apiKey = String(formData.get("apiKey") ?? "").trim();
+  if (!apiKey) return { error: "Paste your key first" };
+  if (!apiKey.startsWith("sk-ant-")) {
+    return { error: "That doesn't look like a Claude key. It should start with sk-ant-." };
+  }
+
+  try {
+    await new Anthropic({ apiKey }).models.list({ limit: 1 });
+  } catch (error) {
+    if (error instanceof AuthenticationError || error instanceof PermissionDeniedError) {
+      return { error: "Anthropic did not accept that key. Copy it again and make sure nothing is missing." };
+    }
+    return { error: "Could not reach Anthropic. Try again in a minute." };
+  }
+
+  await prisma.user.update({ where: { id: userId }, data: { anthropicApiKey: encrypt(apiKey) } });
+  revalidatePath("/settings");
+  revalidatePath("/coach");
+  return { saved: true };
+}
+
+export async function removeClaudeKey() {
+  const userId = await requireUserId();
+  await prisma.user.update({ where: { id: userId }, data: { anthropicApiKey: null } });
+  revalidatePath("/settings");
+  revalidatePath("/coach");
 }

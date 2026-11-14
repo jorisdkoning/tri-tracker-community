@@ -81,11 +81,16 @@ export default async function NutritionPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-baseline justify-between">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h1 className="text-2xl font-semibold">Nutrition</h1>
-        <Link href="/nutrition/insights" className="text-sm text-accent">
-          Insights →
-        </Link>
+        <div className="flex gap-4 text-sm">
+          <Link href="/help/food-logging" className="text-accent">
+            Log by chatting with Claude
+          </Link>
+          <Link href="/nutrition/insights" className="text-accent">
+            Insights →
+          </Link>
+        </div>
       </div>
       <p className="text-sm text-foreground/70">
         {user.foodRestrictions.length > 0 && "Meals that may not fit your food restrictions get a warning. "}

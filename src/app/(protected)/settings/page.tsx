@@ -4,7 +4,8 @@ import { requireUser } from "@/lib/session";
 import { getBaseUrl } from "@/lib/base-url";
 import { getOrCreateLinkToken } from "@/lib/tokens";
 import { ProfileFields } from "@/components/ProfileFields";
-import { disconnectIntervals, disconnectStrava } from "./actions";
+import { disconnectIntervals, disconnectStrava, removeClaudeKey } from "./actions";
+import { ClaudeKeyForm } from "./ClaudeKeyForm";
 import { SyncButton } from "./SyncButton";
 import { StravaSyncButton } from "./StravaSyncButton";
 import { CopyField } from "./CopyField";
@@ -47,14 +48,16 @@ export default async function SettingsPage({
   const user = await requireUser();
   const { strava_error, welcome } = await searchParams;
 
-  const [intervals, strava, base, healthToken, calendarToken, claudeToken] = await Promise.all([
+  const [intervals, strava, base, healthToken, calendarToken, claudeToken, coachKey] = await Promise.all([
     prisma.intervalsAccount.findUnique({ where: { userId: user.id } }),
     prisma.stravaAccount.findUnique({ where: { userId: user.id } }),
     getBaseUrl(),
     getOrCreateLinkToken(user.id, "HEALTH"),
     getOrCreateLinkToken(user.id, "CALENDAR"),
     getOrCreateLinkToken(user.id, "CLAUDE"),
+    prisma.user.findUnique({ where: { id: user.id }, select: { anthropicApiKey: true } }),
   ]);
+  const hasClaudeKey = Boolean(coachKey?.anthropicApiKey);
   const healthUrl = `${base}/api/ingest/health/${healthToken}`;
   const calendarUrl = `${base}/api/calendar/${calendarToken}`;
   const claudeUrl = `${base}/api/mcp/${claudeToken}`;
@@ -203,6 +206,48 @@ export default async function SettingsPage({
           <NewLinkButton kind="CALENDAR" />
         </ConnectionCard>
 
+        <div id="claude-key" className="scroll-mt-20">
+          <ConnectionCard
+            title="AI coach (optional)"
+            subtitle="Ask questions about your training, health and food on the Coach page. Uses your own Claude key."
+            connected={hasClaudeKey}
+          >
+            {hasClaudeKey ? (
+              <div className="space-y-3">
+                <p className="text-sm text-foreground/70">
+                  Your key is saved (encrypted). Questions are billed to your own Anthropic account.
+                </p>
+                <Link href="/coach" className="btn-secondary inline-block">
+                  Open the coach
+                </Link>
+                <form action={removeClaudeKey}>
+                  <button type="submit" className="text-sm text-red-600 hover:underline dark:text-red-400">
+                    Remove key
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <Steps
+                  steps={[
+                    <>
+                      Open{" "}
+                      <a href="https://console.anthropic.com" target="_blank" rel="noreferrer" className="text-accent underline">
+                        console.anthropic.com
+                      </a>{" "}
+                      and sign up or sign in. This is separate from a claude.ai subscription.
+                    </>,
+                    <>Under <b>Billing</b>, add a few dollars of credit. Each question usually costs less than a cent.</>,
+                    <>Under <b>API keys</b>, press <b>Create key</b>, give it a name (e.g. FitLog) and copy it.</>,
+                    <>Paste it below and press Save. Only you can use it.</>,
+                  ]}
+                />
+                <ClaudeKeyForm />
+              </div>
+            )}
+          </ConnectionCard>
+        </div>
+
         <ConnectionCard
           title="Claude (optional)"
           subtitle="Tell Claude what you ate, and it lands on your Nutrition page."
@@ -214,6 +259,9 @@ export default async function SettingsPage({
             ]}
           />
           <CopyField value={claudeUrl} />
+          <Link href="/help/food-logging" className="text-sm font-medium text-accent hover:underline">
+            Full step-by-step guide →
+          </Link>
           <NewLinkButton kind="CLAUDE" />
         </ConnectionCard>
       </div>

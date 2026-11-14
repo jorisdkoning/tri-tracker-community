@@ -57,8 +57,10 @@ Vercel plan allows one cron job, which is all this needs.
 - **Google sign-in:** create an OAuth client (type *Web application*) in the Google
   Cloud console with redirect URI `https://YOUR-DOMAIN/api/auth/callback/google`,
   then add `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`.
-- **AI coach:** add `ANTHROPIC_API_KEY`. Each question is billed to *your*
-  Anthropic account; `COACH_DAILY_BUDGET_CENTS` caps the spend per person per day.
+- **AI coach:** each person adds their own Claude (Anthropic) key in Settings
+  and pays for their own questions. Optionally add `ANTHROPIC_API_KEY` as a
+  fallback for people without a key; those questions are billed to *your*
+  Anthropic account, and `COACH_DAILY_BUDGET_CENTS` caps that spend per person per day.
 - **Your own name:** set `NEXT_PUBLIC_APP_NAME`.
 
 ### Updating

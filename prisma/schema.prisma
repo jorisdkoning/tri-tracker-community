@@ -25,6 +25,8 @@ model User {
   currency    String    @default("EUR")
   // Preset ids (see lib/food-restrictions) and the user's own words to avoid
   foodRestrictions String[] @default([])
+  // The user's own Anthropic API key for the AI coach, encrypted (lib/crypto)
+  anthropicApiKey String?
   onboardedAt DateTime?
   // The first account on a deployment becomes admin automatically
   isAdmin     Boolean   @default(false)
