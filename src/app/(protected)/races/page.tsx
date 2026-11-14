@@ -2,7 +2,11 @@ import type { DistanceType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { formatMoney } from "@/lib/profile";
 import { requireUser } from "@/lib/session";
+import { localDateString } from "@/lib/time";
 import { addRace, deleteRace } from "./actions";
+import { eventPlan } from "@/lib/event-plan";
+import { weeklyHours } from "@/lib/event-plan-data";
+import { EventPlanCard } from "./_plan/EventPlanCard";
 
 const DISTANCE_LABELS: Record<DistanceType, string> = {
   SPRINT: "Sprint triathlon",
@@ -12,9 +16,8 @@ const DISTANCE_LABELS: Record<DistanceType, string> = {
   OTHER: "Event",
 };
 
-function daysUntil(date: Date) {
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
+function daysUntil(date: Date, timeZone: string) {
+  const today = new Date(localDateString(timeZone));
   return Math.round((date.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
 }
 
@@ -30,12 +33,17 @@ export default async function RacesPage() {
     },
   });
 
-  const upcoming = races.filter((race) => daysUntil(race.date) >= 0);
-  const past = races.filter((race) => daysUntil(race.date) < 0).reverse();
+  const upcoming = races.filter((race) => daysUntil(race.date, user.timezone) >= 0);
+  const past = races.filter((race) => daysUntil(race.date, user.timezone) < 0).reverse();
+  const next = upcoming[0];
+  const plan = next
+    ? eventPlan(daysUntil(next.date, user.timezone), next.distanceType, await weeklyHours(userId, user.timezone))
+    : null;
 
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-semibold">Events</h1>
+      {next && plan && <EventPlanCard name={next.name} plan={plan} />}
 
       <section className="space-y-3">
         <h2 className="text-lg font-medium">Add event</h2>
@@ -117,7 +125,7 @@ export default async function RacesPage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {upcoming.map((race) => {
-              const days = daysUntil(race.date);
+              const days = daysUntil(race.date, user.timezone);
               const spent = race.expenses.reduce(
                 (sum, expense) => sum + expense.amount,
                 0
