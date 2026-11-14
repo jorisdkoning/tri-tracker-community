@@ -41,6 +41,11 @@ describe("checkRestrictions", () => {
     expect(labels("toast with egg", ["egg", "gluten"])).toEqual(["Eggs", "Gluten"]);
   });
 
+  it("matches the singular of a plural own word", () => {
+    expect(labels("mushroom soup", ["mushrooms"])).toEqual(["mushrooms"]);
+    expect(labels("tomatoes on toast", ["tomatoes"])).toEqual(["tomatoes"]);
+  });
+
   it("matches whole words only", () => {
     expect(labels("fruit juice", ["fodmap"])).toEqual([]);
     expect(labels("hamburger", ["vegetarian"])).toEqual([]);
@@ -55,6 +60,12 @@ describe("checkRestrictions", () => {
 });
 
 describe("normalizeRestrictions", () => {
+  it("turns a typed preset name into that preset", () => {
+    const saved = normalizeRestrictions([], "egg, nuts");
+    expect(saved).toEqual(["egg", "nuts"]);
+    expect(labels("omelette with peanuts", saved)).toEqual(["Eggs", "Nuts"]);
+  });
+
   it("drops unknown presets, trims and dedupes own words", () => {
     expect(normalizeRestrictions(["nuts", "x"], "Sesame;  sesame , a, Coriander")).toEqual(["nuts", "sesame", "coriander"]);
   });

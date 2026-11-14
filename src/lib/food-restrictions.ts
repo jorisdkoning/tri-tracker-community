@@ -91,6 +91,14 @@ function mentions(text: string, word: string) {
   return new RegExp(`(^|[^\\p{L}])${escape(word)}(s|es|en)?($|[^\\p{L}])`, "u").test(text);
 }
 
+// The user's own word plus its singular, so "mushrooms" also flags "mushroom soup".
+function wordForms(word: string) {
+  const forms = [word];
+  if (word.length > 4 && word.endsWith("es")) forms.push(word.slice(0, -2));
+  if (word.length > 3 && word.endsWith("s")) forms.push(word.slice(0, -1));
+  return forms;
+}
+
 // "lactose-free milk" means the ingredient is absent, so those phrases are
 // dropped before looking for keywords.
 function withoutFreeFrom(text: string) {
@@ -105,13 +113,14 @@ export function splitRestrictions(restrictions: string[]) {
   };
 }
 
-// Normalises form input: known preset ids plus comma-separated own words.
+// Normalises form input: known preset ids plus comma-separated own words. A
+// typed word that names a preset (e.g. "nuts") turns that preset on.
 export function normalizeRestrictions(presetIds: string[], customText: string): string[] {
   const presets = presetIds.filter((id) => PRESET_IDS.has(id));
   const custom = customText
     .split(/[,;\n]/)
     .map((w) => w.trim().toLowerCase().replace(/\s+/g, " "))
-    .filter((w) => w.length >= 2 && w.length <= 40 && !PRESET_IDS.has(w));
+    .filter((w) => w.length >= 2 && w.length <= 40);
   return [...new Set([...presets, ...custom])].slice(0, 30);
 }
 
@@ -132,7 +141,7 @@ export function checkRestrictions(description: string, restrictions: string[]): 
       if (preset.safeWords?.test(lower)) continue;
       const matched = preset.keywords.filter((word) => mentions(stripped, word));
       if (matched.length > 0) flags.push({ label: preset.label, matched });
-    } else if (mentions(stripped, id)) {
+    } else if (wordForms(id).some((form) => mentions(stripped, form))) {
       flags.push({ label: id, matched: [id] });
     }
   }
