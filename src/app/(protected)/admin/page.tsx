@@ -92,6 +92,20 @@ export default async function AdminPage() {
         </ul>
       </section>
 
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          ["People", users.length],
+          ["Active this week", users.filter((u) => u.status.active).length],
+          ["Finished setup", users.filter((u) => u.onboardedAt).length],
+          ["Sync problems", users.filter((u) => u.status.syncStale).length],
+        ].map(([label, value]) => (
+          <div key={label} className="card p-4">
+            <p className="text-2xl font-semibold">{value}</p>
+            <p className="text-xs text-foreground/60">{label}</p>
+          </div>
+        ))}
+      </section>
+
       <section className="card space-y-4 p-5">
         <h2 className="text-lg font-semibold">People ({users.length})</h2>
         <ul className="space-y-4">
@@ -107,8 +121,14 @@ export default async function AdminPage() {
                 <p className="text-xs text-foreground/55">
                   Joined {dateFmt(u.createdAt)} · {u.onboardedAt ? "set up" : "not set up yet"} ·{" "}
                   {[u.stravaAccount && "Strava", u.intervalsAccount && "Intervals.icu"].filter(Boolean).join(" + ") || "no apps"} ·{" "}
-                  {u._count.activities} workouts
+                  {u._count.activities} workouts · last active{" "}
+                  {u.status.lastActive ? dateFmt(u.status.lastActive) : "never"}
                 </p>
+                {u.status.syncStale && (
+                  <p className="w-full text-xs text-red-600 dark:text-red-400">
+                    Their connected app hasn&apos;t updated for over 2 days. They may need to reconnect it in Settings.
+                  </p>
+                )}
               </div>
               <div className="flex flex-wrap items-start gap-4">
                 <ResetLinkButton userId={u.id} />
