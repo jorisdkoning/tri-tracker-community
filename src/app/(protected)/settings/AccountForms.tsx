@@ -37,7 +37,7 @@ export function DeleteAccountForm({ email }: { email: string }) {
       </summary>
       <form action={action} className="mt-3 space-y-3">
         <p className="text-sm text-foreground/70">
-          This removes everything: workouts, health data, meals, races and connections. It cannot be undone.
+          This removes everything: workouts, health data, meals, events and connections. It cannot be undone.
           Type <b>{email}</b> to confirm.
         </p>
         <input name="confirmEmail" autoComplete="off" required className="field max-w-sm" />

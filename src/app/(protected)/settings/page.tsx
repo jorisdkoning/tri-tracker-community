@@ -167,7 +167,7 @@ export default async function SettingsPage({
 
         <ConnectionCard
           title="Calendar"
-          subtitle="See your planned workouts and races in your phone's calendar."
+          subtitle="See your planned workouts and events in your phone's calendar."
         >
           <a href={calendarUrl.replace(/^https?/, "webcal")} className="btn-secondary">
             Add to my calendar

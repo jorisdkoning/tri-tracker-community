@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { href: "/gym", label: "Gym" },
   { href: "/nutrition", label: "Nutrition" },
   { href: "/budget", label: "Budget" },
-  { href: "/races", label: "Races" },
+  { href: "/races", label: "Events" },
   { href: "/goals", label: "Goals" },
   { href: "/coach", label: "Coach" },
   { href: "/settings", label: "Settings" },

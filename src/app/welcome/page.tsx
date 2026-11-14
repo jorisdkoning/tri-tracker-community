@@ -22,12 +22,12 @@ export default async function WelcomePage() {
         </section>
         <section className="card space-y-4 p-5">
           <div>
-            <h2 className="font-semibold">Your next race (optional)</h2>
+            <h2 className="font-semibold">Your next event (optional)</h2>
             <p className="text-sm text-foreground/60">We&apos;ll count down to it on your dashboard.</p>
           </div>
           <label className="block space-y-1">
-            <span className="text-sm font-medium">Race name</span>
-            <input name="raceName" maxLength={120} placeholder="e.g. Rotterdam Olympic" className="field" />
+            <span className="text-sm font-medium">Event name</span>
+            <input name="raceName" maxLength={120} placeholder="e.g. City 10K, marathon, triathlon" className="field" />
           </label>
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block space-y-1">
@@ -35,13 +35,13 @@ export default async function WelcomePage() {
               <input name="raceDate" type="date" className="field" />
             </label>
             <label className="block space-y-1">
-              <span className="text-sm font-medium">Distance</span>
-              <select name="raceDistance" defaultValue="OLYMPIC" className="field">
-                <option value="SPRINT">Sprint</option>
-                <option value="OLYMPIC">Olympic</option>
+              <span className="text-sm font-medium">Type</span>
+              <select name="raceDistance" defaultValue="OTHER" className="field">
+                <option value="OTHER">Run, ride, walk or other event</option>
+                <option value="SPRINT">Sprint triathlon</option>
+                <option value="OLYMPIC">Olympic triathlon</option>
                 <option value="HALF_IRONMAN">Half Ironman (70.3)</option>
                 <option value="IRONMAN">Ironman</option>
-                <option value="OTHER">Other</option>
               </select>
             </label>
           </div>

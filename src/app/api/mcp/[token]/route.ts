@@ -70,7 +70,7 @@ async function targetLine(userId: string, timeZone: string, day: string, kcal: n
 }
 
 function buildServer(userId: string, timeZone: string, showFodmap: boolean) {
-  const server = new McpServer({ name: "tri-tracker", version: "1.0.0" });
+  const server = new McpServer({ name: "fitlog", version: "1.0.0" });
 
   server.registerTool(
     "log_meal",

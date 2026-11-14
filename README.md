@@ -1,16 +1,17 @@
-# Tri Tracker (community edition)
+# FitLog
 
-A training and wellness tracker for triathletes that anyone can sign up for.
+A health and fitness tracker that anyone can sign up for: workouts, sleep, weight,
+nutrition, goals and events, for runners, cyclists, triathletes and everyone else.
 Each person gets their own private dashboard and connects their own apps:
 
 - **Strava** – runs, rides and swims, with maps and segment PRs
 - **Intervals.icu** – fitness/fatigue, sleep, HRV, resting heart rate, planned workouts
 - **Apple Health** – through the Health Auto Export iPhone app and a personal link
-- **Calendar** – planned workouts and races in any calendar app
+- **Calendar** – planned workouts and events in any calendar app
 - **Claude** – log meals by chatting (optional)
 
-Plus a daily check-in, races and countdown, goals, nutrition targets that follow
-your training, gym sessions, a race budget, and an optional AI coach. Anything
+Plus a daily check-in, events and countdown, goals, nutrition targets that follow
+your training, gym sessions, an event budget, and an optional AI coach. Anything
 can also be entered by hand, so nobody *needs* to connect an app.
 
 The first person to sign up becomes the **admin**. The Admin page lets you choose

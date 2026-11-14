@@ -6,7 +6,7 @@ import { addExpense, deleteExpense } from "./actions";
 
 const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   GEAR: "Gear",
-  RACE_ENTRY: "Race entry",
+  RACE_ENTRY: "Event entry",
   COACHING: "Coaching",
   NUTRITION: "Nutrition",
   TRAVEL: "Travel",
@@ -151,7 +151,7 @@ export default async function BudgetPage() {
           </div>
           <div className="space-y-1">
             <label htmlFor="raceId" className="block text-sm font-medium">
-              Race (optional)
+              Event (optional)
             </label>
             <select
               id="raceId"
@@ -199,7 +199,7 @@ export default async function BudgetPage() {
                   <th className="py-2 pr-4">Date</th>
                   <th className="py-2 pr-4">Category</th>
                   <th className="py-2 pr-4">Amount</th>
-                  <th className="py-2 pr-4">Race</th>
+                  <th className="py-2 pr-4">Event</th>
                   <th className="py-2 pr-4">Note</th>
                   <th className="py-2" />
                 </tr>

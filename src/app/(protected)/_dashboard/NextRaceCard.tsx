@@ -6,7 +6,7 @@ const DISTANCE_LABELS: Record<string, string> = {
   OLYMPIC: "Olympic",
   HALF_IRONMAN: "70.3",
   IRONMAN: "Ironman",
-  OTHER: "Race",
+  OTHER: "Event",
 };
 
 export function NextRaceCard({
@@ -19,7 +19,7 @@ export function NextRaceCard({
   const next = races[0];
   return (
     <Link href="/races" className="card block p-5 hover:bg-foreground/[0.03]">
-      <p className="text-sm font-medium text-foreground/60">Next race</p>
+      <p className="text-sm font-medium text-foreground/60">Next event</p>
       {next && daysToRace != null ? (
         <>
           <p className="mt-3 text-4xl font-semibold tabular-nums">

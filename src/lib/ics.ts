@@ -106,10 +106,10 @@ export function buildCalendar(
   const lines: string[] = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Tri Tracker//EN",
+    "PRODID:-//FitLog//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
-    "X-WR-CALNAME:Tri Tracker",
+    "X-WR-CALNAME:FitLog",
     "REFRESH-INTERVAL;VALUE=DURATION:PT1H",
     "X-PUBLISHED-TTL:PT1H",
   ];

@@ -50,7 +50,7 @@ export function ProfileFields({ values }: { values: ProfileValues }) {
               </option>
             ))}
           </select>
-          <span className={hintCls}>For the race budget page.</span>
+          <span className={hintCls}>For the budget page.</span>
         </label>
       </div>
       <label className="flex items-start gap-3">

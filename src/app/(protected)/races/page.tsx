@@ -5,11 +5,11 @@ import { requireUser } from "@/lib/session";
 import { addRace, deleteRace } from "./actions";
 
 const DISTANCE_LABELS: Record<DistanceType, string> = {
-  SPRINT: "Sprint",
-  OLYMPIC: "Olympic",
+  SPRINT: "Sprint triathlon",
+  OLYMPIC: "Olympic triathlon",
   HALF_IRONMAN: "70.3 / Half",
   IRONMAN: "Full Ironman",
-  OTHER: "Other",
+  OTHER: "Event",
 };
 
 function daysUntil(date: Date) {
@@ -35,10 +35,10 @@ export default async function RacesPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-semibold">Races</h1>
+      <h1 className="text-2xl font-semibold">Events</h1>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-medium">Add race</h2>
+        <h2 className="text-lg font-medium">Add event</h2>
         <form
           action={addRace}
           className="flex flex-wrap items-end gap-3 card p-4"
@@ -53,7 +53,7 @@ export default async function RacesPage() {
               type="text"
               required
               maxLength={120}
-              placeholder="e.g. Challenge Almere"
+              placeholder="e.g. City Marathon"
               className="w-full rounded-md border border-line bg-transparent px-3 py-2 text-sm"
             />
           </div>

@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: APP_NAME,
-  description: "Training, health, nutrition and race tracking for triathletes",
+  description: "Track workouts, health, sleep, nutrition and goals in one place",
   appleWebApp: { capable: true, title: APP_NAME, statusBarStyle: "default" },
 };
 

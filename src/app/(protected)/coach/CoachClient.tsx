@@ -59,7 +59,7 @@ export function CoachClient() {
       <h1 className="text-2xl font-semibold">Coach</h1>
       <p className="text-sm text-foreground/70">
         Ask about your training, health, and how you&apos;re doing — answers use
-        your real fitness, health, race, and budget data.
+        your real fitness, health, event, and budget data.
       </p>
 
       <div className="flex flex-wrap gap-2">
