@@ -70,22 +70,16 @@ export async function importWorkouts(userId: string, workouts: HealthWorkout[]) 
 
     if (kind === "strength") {
       const date = new Date(start.toISOString().slice(0, 10));
-      const existing = await prisma.gymSession.findFirst({
-        where: { userId, date, source: "apple_health" },
-        select: { id: true },
-      });
+      const externalId = `apple:${start.toISOString()}`;
       const data = {
         durationSec: durationSec != null ? Math.round(durationSec) : null,
         calories: calories != null ? Math.round(calories) : null,
       };
-
-      if (existing) {
-        await prisma.gymSession.update({ where: { id: existing.id }, data });
-      } else {
-        await prisma.gymSession.create({
-          data: { userId, date, sessionType: "OTHER", source: "apple_health", ...data },
-        });
-      }
+      await prisma.gymSession.upsert({
+        where: { userId_externalId: { userId, externalId } },
+        update: data,
+        create: { userId, externalId, date, sessionType: "OTHER", source: "apple_health", ...data },
+      });
       gymCount++;
       continue;
     }
