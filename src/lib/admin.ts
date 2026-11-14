@@ -16,8 +16,8 @@ export async function loadAdminOverview() {
         createdAt: true,
         isAdmin: true,
         onboardedAt: true,
-        stravaAccount: { select: { lastSyncAt: true } },
-        intervalsAccount: { select: { lastSyncAt: true } },
+        stravaAccount: { select: { lastSyncAt: true, createdAt: true } },
+        intervalsAccount: { select: { lastSyncAt: true, createdAt: true } },
         _count: { select: { activities: true } },
         activities: { orderBy: { startDate: "desc" }, take: 1, select: { startDate: true } },
         dailyMetrics: { orderBy: { date: "desc" }, take: 1, select: { date: true } },
@@ -29,15 +29,13 @@ export async function loadAdminOverview() {
   ]);
   const now = new Date();
   const withStatus = users.map((u) => {
-    const syncs = [u.intervalsAccount?.lastSyncAt, u.stravaAccount?.lastSyncAt].filter(
-      (d): d is Date => d instanceof Date
-    );
     return {
       ...u,
       status: adminUserStatus(
         {
-          connected: Boolean(u.intervalsAccount || u.stravaAccount),
-          lastSyncAt: syncs.length > 0 ? new Date(Math.max(...syncs.map((d) => d.getTime()))) : null,
+          connections: [u.intervalsAccount, u.stravaAccount]
+            .filter((c) => c !== null)
+            .map((c) => ({ lastSyncAt: c.lastSyncAt, connectedAt: c.createdAt })),
           latestData: [
             u.activities[0]?.startDate,
             u.dailyMetrics[0]?.date,
