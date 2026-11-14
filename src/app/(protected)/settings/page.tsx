@@ -279,6 +279,15 @@ export default async function SettingsPage({
           <p className="text-sm text-foreground/65">Signed in as {user.email}</p>
         </div>
         <PasswordForm hasPassword={Boolean(user.passwordHash)} />
+        <div className="space-y-2">
+          <h3 className="font-medium">Your data</h3>
+          <p className="text-sm text-foreground/65">
+            Download everything you logged or synced as one file, for example to keep a copy or move to another app.
+          </p>
+          <a href="/api/export/data" className="btn-secondary inline-block">
+            Download all my data
+          </a>
+        </div>
         <DeleteAccountForm email={user.email} />
       </section>
     </div>
