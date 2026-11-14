@@ -1,7 +1,9 @@
 import { requireUser } from "@/lib/session";
 import { loadDashboardData } from "@/lib/dashboard-data";
 import { CheckInCard } from "./_dashboard/CheckInCard";
-import { SetupBanner } from "./_dashboard/SetupBanner";
+import { cookies } from "next/headers";
+import { loadGettingStarted } from "@/lib/getting-started-data";
+import { GettingStarted } from "./_dashboard/GettingStarted";
 import { FitnessCard } from "./_dashboard/FitnessCard";
 import { NextRaceCard } from "./_dashboard/NextRaceCard";
 import { WeekSummary } from "./_dashboard/WeekSummary";
@@ -13,7 +15,11 @@ import { FuelAndSpend } from "./_dashboard/FuelAndSpend";
 
 export default async function DashboardPage() {
   const user = await requireUser();
-  const data = await loadDashboardData(user.id, user.timezone);
+  const hideChecklist = (await cookies()).get("hide_getting_started")?.value === "1";
+  const [data, steps] = await Promise.all([
+    loadDashboardData(user.id, user.timezone),
+    hideChecklist ? null : loadGettingStarted(user.id),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -22,7 +28,7 @@ export default async function DashboardPage() {
         <h1 className="text-3xl font-semibold">Dashboard</h1>
       </div>
 
-      <SetupBanner missing={data.missingSetup} />
+      {steps && <GettingStarted steps={steps} />}
 
       <CheckInCard {...data.checkIn} />
 

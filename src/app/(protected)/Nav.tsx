@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: "/goals", label: "Goals" },
   { href: "/coach", label: "Coach" },
   { href: "/settings", label: "Settings" },
+  { href: "/help", label: "Help" },
 ];
 
 export function Nav({ isAdmin }: { isAdmin: boolean }) {

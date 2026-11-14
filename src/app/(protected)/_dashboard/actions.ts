@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
@@ -23,5 +24,13 @@ export async function saveCheckIn(feeling: number, note?: string) {
     create: { userId, date, feeling: parsed.feeling, note: parsed.note || null },
   });
 
+  revalidatePath("/");
+}
+
+const HIDE_GETTING_STARTED_COOKIE = "hide_getting_started";
+
+export async function hideGettingStarted() {
+  await requireUser();
+  (await cookies()).set(HIDE_GETTING_STARTED_COOKIE, "1", { maxAge: 60 * 60 * 24 * 365, path: "/", sameSite: "lax" });
   revalidatePath("/");
 }

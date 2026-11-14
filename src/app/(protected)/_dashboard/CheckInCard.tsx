@@ -39,7 +39,7 @@ export function CheckInCard({
   }
 
   return (
-    <div className="card space-y-3 p-5">
+    <div id="check-in" className="card space-y-3 p-5">
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-sm font-medium text-foreground/60">How do you feel today?</p>
         {selected != null && (
