@@ -44,7 +44,14 @@ export function RemindersCard({
       }
       try {
         const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" });
-        return ["yes", await reg.pushManager.getSubscription()];
+        const existing = await reg.pushManager.getSubscription();
+        // The browser may have been subscribed while someone else was signed in:
+        // link this device to the account that is signed in now.
+        if (existing) {
+          const result = await savePushSubscription(JSON.parse(JSON.stringify(existing)));
+          if (!result.ok) return ["yes", null];
+        }
+        return ["yes", existing];
       } catch {
         return ["no", null];
       }
