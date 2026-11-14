@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { LogBodyForm } from "../_log/LogForms";
+import { loadCycle } from "@/lib/cycle-data";
+import { CycleCard } from "./CycleCard";
 import { prisma } from "@/lib/prisma";
 import { MetricChart, type MetricPoint } from "./MetricChart";
 
@@ -12,10 +14,13 @@ export default async function HealthPage() {
   const userId = user.id;
 
   const since = daysAgo(WINDOW_DAYS);
-  const metrics = await prisma.dailyMetric.findMany({
-    where: { userId, date: { gte: since } },
-    orderBy: { date: "asc" },
-  });
+  const [metrics, cycle] = await Promise.all([
+    prisma.dailyMetric.findMany({
+      where: { userId, date: { gte: since } },
+      orderBy: { date: "asc" },
+    }),
+    loadCycle(userId, user.timezone),
+  ]);
 
   function series(field: "hrv" | "restingHr" | "sleepHours" | "weightKg") {
     return metrics
@@ -68,6 +73,8 @@ export default async function HealthPage() {
           />
         </div>
       )}
+
+      <CycleCard cycle={cycle} today={localDateString(user.timezone)} />
     </div>
   );
 }

@@ -60,6 +60,7 @@ model User {
   checkIns         CheckIn[]
   groupsCreated    Group[]           @relation("GroupCreator")
   groupMemberships GroupMember[]
+  cyclePeriods     CyclePeriod[]
 }
 
 // --- Auth.js tables ---
@@ -531,4 +532,15 @@ model GroupMember {
 
   @@id([groupId, userId])
   @@index([userId])
+}
+
+// Opt-in cycle tracking: the days a period started. Private to the user.
+model CyclePeriod {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startDate DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  @@unique([userId, startDate])
 }
