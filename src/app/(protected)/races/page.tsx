@@ -1,6 +1,7 @@
 import type { DistanceType } from "@prisma/client";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { formatMoney } from "@/lib/profile";
+import { requireUser } from "@/lib/session";
 import { addRace, deleteRace } from "./actions";
 
 const DISTANCE_LABELS: Record<DistanceType, string> = {
@@ -18,8 +19,8 @@ function daysUntil(date: Date) {
 }
 
 export default async function RacesPage() {
-  const session = await auth();
-  const userId = session!.user!.id!;
+  const user = await requireUser();
+  const userId = user.id;
 
   const races = await prisma.race.findMany({
     where: { userId },
@@ -147,7 +148,7 @@ export default async function RacesPage() {
                   )}
                   {spent > 0 && (
                     <p className="text-sm text-foreground/60">
-                      Spent so far: €{spent.toFixed(2)}
+                      Spent so far: {formatMoney(spent, user.currency)}
                     </p>
                   )}
                   <form action={deleteRace}>

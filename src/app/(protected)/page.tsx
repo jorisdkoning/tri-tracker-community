@@ -41,7 +41,7 @@ export default async function DashboardPage() {
 
       <div className="grid gap-6 md:grid-cols-3">
         <GoalsCard goals={data.goals} />
-        <FuelAndSpend fuel={data.fuel} monthSpend={data.monthSpend} />
+        <FuelAndSpend fuel={data.fuel} monthSpend={data.monthSpend} currency={user.currency} />
       </div>
     </div>
   );

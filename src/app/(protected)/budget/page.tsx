@@ -120,7 +120,7 @@ export default async function BudgetPage() {
           </div>
           <div className="space-y-1">
             <label htmlFor="amount" className="block text-sm font-medium">
-              Amount (€)
+              Amount ({user.currency})
             </label>
             <input
               id="amount"

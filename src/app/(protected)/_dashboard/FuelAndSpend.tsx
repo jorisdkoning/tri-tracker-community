@@ -1,12 +1,15 @@
 import Link from "next/link";
 import type { DashboardData } from "@/lib/dashboard-data";
+import { formatMoney } from "@/lib/profile";
 
 export function FuelAndSpend({
   fuel,
   monthSpend,
+  currency,
 }: {
   fuel: DashboardData["fuel"];
   monthSpend: number;
+  currency: string;
 }) {
   const { kcal, protein, plan } = fuel;
   return (
@@ -34,7 +37,7 @@ export function FuelAndSpend({
       </Link>
       <Link href="/budget" className="card block p-4 hover:bg-foreground/[0.03]">
         <p className="text-sm text-foreground/60">Spent this month</p>
-        <p className="mt-1 text-2xl font-semibold tabular-nums">€{monthSpend.toFixed(0)}</p>
+        <p className="mt-1 text-2xl font-semibold tabular-nums">{formatMoney(Math.round(monthSpend), currency)}</p>
       </Link>
     </div>
   );

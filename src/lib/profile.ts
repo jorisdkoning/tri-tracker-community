@@ -25,7 +25,8 @@ export function parseProfileForm(formData: FormData) {
 
 export function allTimezones(): string[] {
   try {
-    return Intl.supportedValuesOf("timeZone");
+    const zones = Intl.supportedValuesOf("timeZone");
+    return zones.includes("UTC") ? zones : ["UTC", ...zones];
   } catch {
     return ["UTC", "Europe/Amsterdam", "Europe/London", "America/New_York"];
   }
